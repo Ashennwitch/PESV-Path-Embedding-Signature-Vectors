@@ -1,0 +1,36 @@
+%
+% Halaman Abstract
+%
+% @author  Andreas Febrian
+% @version 1.00
+%
+
+%\chapter*{Abstract}
+\setstretch{1}
+\vspace*{0.2cm}
+{
+%    \begingroup
+    \singlespacing
+	\setlength{\parindent}{0pt}
+	
+	\begin{tabular}{@{}l l p{10cm}}
+		Name&: & \penulis \\
+		Study Program&: & \program \\
+		Title&: & \judulInggris \\
+		Supervisor&: & \pembimbing \\
+	\end{tabular}
+
+	\bigskip
+	\bigskip
+    
+The widespread adoption of Virtual Private Networks (VPNs) enhances user privacy but poses a significant challenge for network management and security by obscuring traffic content. Traditional analysis methods like Deep Packet Inspection (DPI) are rendered ineffective by encryption, creating a critical need for techniques that can classify traffic without inspecting its payload. While many methods can detect the presence of a VPN, the fine-grained classification of the specific application or category within an encrypted tunnel remains a complex problem. This research introduces a novel flow-based framework, the Path-Embedding Signature Vector (PESV), designed to characterize and classify encrypted VPN traffic based on its high-level behavioral dynamics. The proposed PESV is a multi-faceted signature vector, $\Sigma = (\alpha, \beta, \gamma)$, where each component captures a distinct aspect of a traffic flow's behavior. The first component, $\alpha$, utilizes a sequence-based autoencoder to generate a learned embedding from packet size sequences, capturing the structural patterns of data exchange. The second component, $\beta$, employs the Wasserstein distance to measure the dissimilarity between packet interarrival time distributions, effectively profiling the flow's temporal rhythm and periodicity. The final component, $\gamma$, calculates the cosine similarity of burst-level statistics to characterize the macro-dynamics of the communication. This method was evaluated on the ISCX 2016 dataset, which was preprocessed into a collection of 8,763 validated traffic flows. The resulting PESVs form a feature-rich database used to train and evaluate a machine learning classifier for both application and category-level identification. The proposed framework demonstrates that by representing traffic flows through their intrinsic path-like behaviors—sequence, timing, and burstiness—it is possible to achieve high classification performance, offering a robust solution for gaining critical visibility into encrypted network traffic.
+
+%The abstract is a concise and informative summary of the entire final project, essentially \catatan{covering the problem}, \catatan{objectives}, \catatan{research methods}, \catatan{results}, and \catatan{conclusions}, designed to quickly help readers understand the content of the final project and decide its relevance. This abstract must be \catatan{written in a single paragraph} with a \catatan{maximum length of 500 words}, using \catatan{Times New Roman font} \catatan{12 points}, with \catatan{single line spacing}. It is important to note that the abstract must be prepared in two languages, namely \catatan{Indonesian} and \catatan{English}, where each language version follows the same format provisions and, if possible, should be placed on one page. At the top of the abstract, the \catatan{Student's Name (without student ID)}, \catatan{Study Program}, and \catatan{Final Project Title} must be included. The bottom of each abstract (both Indonesian and English versions) must be followed by \catatan{relevant Keywords}, presented in the appropriate language (Indonesian for the Indonesian abstract, and English equivalents for the English abstract). The specific content of the abstract can be adjusted according to the respective field of study.
+	\bigskip
+
+	Keywords:
+	VPN traffic classification, encrypted traffic analysis, flow-based classification, machine learning, deep learning, autoencoder, signature vector, ISCX 2016.
+%    \endgroup
+}
+
+\newpage
