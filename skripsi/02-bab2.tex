@@ -1,0 +1,54 @@
+%-----------------------------------------------------------------------------%
+\chapter{\babDua}
+\label{cha:studiliteratur}
+%-----------------------------------------------------------------------------%
+Bab ini menyajikan landasan teoretis dan kontekstual yang mendasari perancangan dan evaluasi sistem D'Office. 
+Pembahasan diawali dengan pemetaan Alur Kerja Pengelolaan Tugas Akhir yang berlaku saat ini untuk memberikan konteks permasalahan yang nyata. 
+Selanjutnya, dipaparkan Landasan Teori yang mencakup berbagai konsep teknis, mulai dari metodologi pengembangan perangkat lunak, sistem tata letak dokumen (\LaTeX), hingga kerangka kerja terperinci untuk evaluasi. 
+Bab ini juga merangkum Pedoman Penulisan Tugas Akhir resmi sebagai acuan. 
+Sebagai penutup, bab ini memposisikan penelitian dengan melakukan Studi Pustaka Sistem Sejenis yang kemudian mengerucut pada penegasan Posisi Penelitian yang menyoroti kebaruan dan kontribusi dari sistem D'Office.
+
+% Anda bisa meletakkan kode ini setelah \chapter{Tinjauan Pustaka}
+% atau \chapter{Landasan Teori} di file .tex utama Anda.
+
+\section{Analisis Lalu Lintas Jaringan (Network Traffic Analysis)}
+Analisis lalu lintas jaringan secara historis bergantung pada teknik-teknik yang mampu menginspeksi konten data untuk melakukan klasifikasi. Namun, pergeseran fundamental menuju enkripsi data telah memaksa pengembangan pendekatan-pendekatan baru.
+
+\subsection{Kegagalan Deep Packet Inspection (DPI) pada Lalu Lintas Terenkripsi}
+Metode tradisional yang paling dominan untuk klasifikasi lalu lintas adalah Deep Packet Inspection (DPI). DPI bekerja dengan cara memeriksa konten (payload) dari setiap paket data yang lewat \citep{azab2024network}. Teknik ini membandingkan isi payload dengan basis data signature (tanda tangan) yang telah diketahui—seperti string, pola bit, atau ekspresi reguler—untuk mengidentifikasi aplikasi atau protokol yang menghasilkannya \citep{dainotti2012issues}.
+
+Meskipun efektif pada lalu lintas plaintext, keandalan DPI telah runtuh seiring dengan adopsi enkripsi secara masif. Dengan sekitar 95\% lalu lintas web kini dienkripsi menggunakan HTTPS \citep{sharma2024survey}, payload data menjadi tidak dapat dibaca oleh perangkat jaringan. Enkripsi secara efektif membuat DPI menjadi ``buta'' \citep{anderson2018deciphering}, karena teknik pencocokan pola tradisional tidak dapat lagi diterapkan pada pesan yang terenkripsi \citep{anderson2018deciphering}.
+
+Kegagalan ini menciptakan celah visibilitas yang kritis bagi keamanan jaringan. Pelaku kejahatan siber secara aktif mengeksploitasi celah ini; sebuah laporan pada tahun 2023 mengungkapkan bahwa 85.9\% serangan siber kini memanfaatkan saluran terenkripsi untuk menyembunyikan aktivitas berbahaya, seperti eksfiltrasi data atau komunikasi Command and Control (C2) \citep{sharma2024survey,anderson2018deciphering}.
+
+Selain kegagalan teknis dalam menghadapi enkripsi, DPI juga memiliki kelemahan inheren lainnya:
+
+\begin{itemize}
+  \item \textbf{Masalah Privasi:} Kemampuan untuk membaca payload paket menimbulkan kekhawatiran serius tentang privasi pengguna dan kepatuhan terhadap regulasi \citep{dainotti2012issues,azab2024network}.
+  \item \textbf{Beban Komputasi:} DPI adalah proses yang sangat intensif secara komputasi dan sulit untuk diterapkan pada tautan jaringan berkecepatan tinggi tanpa perangkat keras khusus yang mahal \citep{dainotti2012issues}.
+  \item \textbf{Keterbatasan Pemeliharaan:} DPI bergantung pada basis data signature yang harus terus-menerus diperbarui untuk mendeteksi aplikasi baru atau varian protokol \citep{azab2024network}.
+\end{itemize}
+
+\subsection{Prinsip Dasar Analisis Lalu Lintas Terenkripsi (ETA)}
+Sebagai respons terhadap kegagalan DPI, fokus penelitian bergeser ke Analisis Lalu Lintas Terenkripsi (Encrypted Traffic Analysis -- ETA). Prinsip dasar ETA adalah bahwa meskipun konten (payload) dienkripsi, metadata dan pola perilaku lalu lintas tetap dapat diamati \citep{sharma2024survey,anderson2018deciphering}.
+
+ETA bekerja tanpa perlu mendekripsi data, sehingga menjaga privasi pengguna sekaligus mencoba memulihkan visibilitas jaringan \citep{anderson2018deciphering}. Pendekatan ini didasarkan pada hipotesis bahwa setiap aplikasi atau layanan (misalnya, streaming video, obrolan, transfer file) menghasilkan ``sidik jari'' (fingerprint) perilaku yang unik. Model \textit{machine learning} kemudian dapat dilatih untuk mengenali sidik jari ini.
+
+Fitur-fitur utama yang diamati dalam ETA dapat dikategorikan sebagai berikut:
+
+\begin{enumerate}
+  \item \textbf{Fitur Statistik Aliran (Flow-based Statistical Features):} Fitur-fitur ini dihitung dari agregasi paket dalam satu aliran (flow), mencakup durasi aliran, volume total data, jumlah total paket, serta properti statistik (seperti rata-rata, min, maks, dan standar deviasi) dari ukuran paket dan Waktu Antar-Kedatangan (Inter-Arrival Time -- IAT) paket \citep{azab2024network,dainotti2012issues}. Fitur-fitur ini mendasari komponen $\delta$ dan $\gamma'$ dalam penelitian ini.
+
+  \item \textbf{Fitur Sekuensial (Sequence-based Features):} Alih-alih hanya melihat statistik agregat, fitur ini merepresentasikan urutan (\textit{sequence}) dari $N$ paket pertama dalam sebuah aliran. Urutan ini biasanya mencakup ukuran dan arah setiap paket (misalnya, +60 untuk paket 60-byte keluar, -1500 untuk paket 1500-byte masuk). Pola sekuensial ini sering dianggap sebagai ``tata bahasa'' dari sebuah sesi komunikasi dan menjadi dasar bagi komponen $\alpha$ \citep{anderson2018deciphering}.
+
+  \item \textbf{Metadata Handshake TLS (TLS Handshake Metadata):} Meskipun data aplikasi dienkripsi, proses handshake TLS itu sendiri—yang menegosiasikan koneksi aman—mengandung banyak metadata yang tidak terenkripsi. Metadata ini menyediakan petunjuk kuat tentang klien (aplikasi) dan server yang berkomunikasi. Fitur yang dapat diekstraksi meliputi:
+  \begin{itemize}
+    \item Versi TLS yang ditawarkan,
+    \item Daftar \textit{ciphersuite} yang diusulkan oleh klien,
+    \item Daftar ekstensi TLS yang diiklankan,
+    \item Informasi dari sertifikat server (misalnya, Otoritas Sertifikat, masa berlaku, jumlah \textit{Subject Alternative Names (SAN)}),
+    \item Panjang kunci publik yang digunakan \citep{anderson2018deciphering}.
+  \end{itemize}
+\end{enumerate}
+
+Dengan memanfaatkan kombinasi fitur-fitur ini, ETA memungkinkan klasifikasi lalu lintas yang \textit{robust} tanpa melanggar privasi yang diberikan oleh enkripsi.
