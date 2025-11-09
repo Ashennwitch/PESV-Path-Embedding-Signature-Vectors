@@ -2,17 +2,13 @@
 \chapter{\babDua}
 \label{cha:studiliteratur}
 %-----------------------------------------------------------------------------%
-Bab ini menyajikan landasan teoretis dan kontekstual yang mendasari perancangan dan evaluasi sistem D'Office. 
-Pembahasan diawali dengan pemetaan Alur Kerja Pengelolaan Tugas Akhir yang berlaku saat ini untuk memberikan konteks permasalahan yang nyata. 
-Selanjutnya, dipaparkan Landasan Teori yang mencakup berbagai konsep teknis, mulai dari metodologi pengembangan perangkat lunak, sistem tata letak dokumen (\LaTeX), hingga kerangka kerja terperinci untuk evaluasi. 
-Bab ini juga merangkum Pedoman Penulisan Tugas Akhir resmi sebagai acuan. 
-Sebagai penutup, bab ini memposisikan penelitian dengan melakukan Studi Pustaka Sistem Sejenis yang kemudian mengerucut pada penegasan Posisi Penelitian yang menyoroti kebaruan dan kontribusi dari sistem D'Office.
+Bagian ini menjelaskan konsep, teori, dan teknologi fundamental yang menjadi dasar metodologi Hybrid Flow Vector (HFV).
 
 % Anda bisa meletakkan kode ini setelah \chapter{Tinjauan Pustaka}
 % atau \chapter{Landasan Teori} di file .tex utama Anda.
 
 \section{Analisis Lalu Lintas Jaringan (Network Traffic Analysis)}
-Analisis lalu lintas jaringan secara historis bergantung pada teknik-teknik yang mampu menginspeksi konten data untuk melakukan klasifikasi. Namun, pergeseran fundamental menuju enkripsi data telah memaksa pengembangan pendekatan-pendekatan baru.
+Analisis lalu lintas jaringan adalah proses fundamental dalam manajemen dan keamanan jaringan, yang bertujuan untuk memahami, mengkategorikan, dan memantau data yang mengalir melalui infrastruktur jaringan. Secara historis, tugas ini sangat bergantung pada kemampuan untuk memeriksa konten data secara langsung.
 
 \subsection{Kegagalan Deep Packet Inspection (DPI) pada Lalu Lintas Terenkripsi}
 Metode tradisional yang paling dominan untuk klasifikasi lalu lintas adalah Deep Packet Inspection (DPI). DPI bekerja dengan cara memeriksa konten (payload) dari setiap paket data yang lewat \citep{azab2024network}. Teknik ini membandingkan isi payload dengan basis data signature (tanda tangan) yang telah diketahui—seperti string, pola bit, atau ekspresi reguler—untuk mengidentifikasi aplikasi atau protokol yang menghasilkannya \citep{dainotti2012issues}.
@@ -24,9 +20,9 @@ Kegagalan ini menciptakan celah visibilitas yang kritis bagi keamanan jaringan. 
 Selain kegagalan teknis dalam menghadapi enkripsi, DPI juga memiliki kelemahan inheren lainnya:
 
 \begin{itemize}
-  \item \textbf{Masalah Privasi:} Kemampuan untuk membaca payload paket menimbulkan kekhawatiran serius tentang privasi pengguna dan kepatuhan terhadap regulasi \citep{dainotti2012issues,azab2024network}.
-  \item \textbf{Beban Komputasi:} DPI adalah proses yang sangat intensif secara komputasi dan sulit untuk diterapkan pada tautan jaringan berkecepatan tinggi tanpa perangkat keras khusus yang mahal \citep{dainotti2012issues}.
-  \item \textbf{Keterbatasan Pemeliharaan:} DPI bergantung pada basis data signature yang harus terus-menerus diperbarui untuk mendeteksi aplikasi baru atau varian protokol \citep{azab2024network}.
+  \item Masalah Privasi: Kemampuan untuk membaca payload paket menimbulkan kekhawatiran serius tentang privasi pengguna dan kepatuhan terhadap regulasi \citep{dainotti2012issues,azab2024network}.
+  \item Beban Komputasi: DPI adalah proses yang sangat intensif secara komputasi dan sulit untuk diterapkan pada tautan jaringan berkecepatan tinggi tanpa perangkat keras khusus yang mahal \citep{dainotti2012issues}.
+  \item Keterbatasan Pemeliharaan: DPI bergantung pada basis data signature yang harus terus-menerus diperbarui untuk mendeteksi aplikasi baru atau varian protokol \citep{azab2024network}.
 \end{itemize}
 
 \subsection{Prinsip Dasar Analisis Lalu Lintas Terenkripsi (ETA)}
@@ -37,18 +33,709 @@ ETA bekerja tanpa perlu mendekripsi data, sehingga menjaga privasi pengguna seka
 Fitur-fitur utama yang diamati dalam ETA dapat dikategorikan sebagai berikut:
 
 \begin{enumerate}
-  \item \textbf{Fitur Statistik Aliran (Flow-based Statistical Features):} Fitur-fitur ini dihitung dari agregasi paket dalam satu aliran (flow), mencakup durasi aliran, volume total data, jumlah total paket, serta properti statistik (seperti rata-rata, min, maks, dan standar deviasi) dari ukuran paket dan Waktu Antar-Kedatangan (Inter-Arrival Time -- IAT) paket \citep{azab2024network,dainotti2012issues}. Fitur-fitur ini mendasari komponen $\delta$ dan $\gamma'$ dalam penelitian ini.
+  \item Metadata Handshake: Data yang tidak terenkripsi dari proses negosiasi koneksi (misalnya, handshake TLS), seperti versi protokol, daftar \textit{ciphersuite} yang ditawarkan, dan informasi sertifikat \citep{anderson2018deciphering}.
 
-  \item \textbf{Fitur Sekuensial (Sequence-based Features):} Alih-alih hanya melihat statistik agregat, fitur ini merepresentasikan urutan (\textit{sequence}) dari $N$ paket pertama dalam sebuah aliran. Urutan ini biasanya mencakup ukuran dan arah setiap paket (misalnya, +60 untuk paket 60-byte keluar, -1500 untuk paket 1500-byte masuk). Pola sekuensial ini sering dianggap sebagai ``tata bahasa'' dari sebuah sesi komunikasi dan menjadi dasar bagi komponen $\alpha$ \citep{anderson2018deciphering}.
+  \item Pola Statistik \textit{flow}: Karakteristik statistik yang dihitung dari agregasi paket dalam satu aliran, seperti durasi total, volume total data, serta distribusi statistik ukuran paket dan Waktu Antar-Kedatangan (Inter-Arrival Time, IAT) \citep{azab2024network, dainotti2012issues}.
 
-  \item \textbf{Metadata Handshake TLS (TLS Handshake Metadata):} Meskipun data aplikasi dienkripsi, proses handshake TLS itu sendiri—yang menegosiasikan koneksi aman—mengandung banyak metadata yang tidak terenkripsi. Metadata ini menyediakan petunjuk kuat tentang klien (aplikasi) dan server yang berkomunikasi. Fitur yang dapat diekstraksi meliputi:
-  \begin{itemize}
-    \item Versi TLS yang ditawarkan,
-    \item Daftar \textit{ciphersuite} yang diusulkan oleh klien,
-    \item Daftar ekstensi TLS yang diiklankan,
-    \item Informasi dari sertifikat server (misalnya, Otoritas Sertifikat, masa berlaku, jumlah \textit{Subject Alternative Names (SAN)}),
-    \item Panjang kunci publik yang digunakan \citep{anderson2018deciphering}.
-  \end{itemize}
+  \item Pola Level-Byte (Byte-Level Patterns): Pola statistik atau sekuensial yang diekstraksi dari byte mentah (\textit{raw payload}) itu sendiri. Meskipun terenkripsi, data ini masih memiliki properti statistik (misalnya distribusi nilai byte) atau pola struktural yang dapat dipelajari oleh model \textit{deep learning} \citep{anderson2018deciphering}.
 \end{enumerate}
 
 Dengan memanfaatkan kombinasi fitur-fitur ini, ETA memungkinkan klasifikasi lalu lintas yang \textit{robust} tanpa melanggar privasi yang diberikan oleh enkripsi.
+
+\section{Klasifikasi Berbasis Aliran (Flow-Based Classification)}
+\label{sec:bab2-flow-based}
+Seiring dengan tidak efektifnya analisis berbasis paket individual (seperti DPI) pada lalu lintas terenkripsi, fokus metodologi bergeser pada unit analisis yang lebih besar yang dikenal sebagai aliran atau \textit{flow}.
+
+\subsection{Definisi \textit{Flow}}
+Secara konseptual, sebuah aliran (flow) adalah sekumpulan paket yang memiliki atribut kunci yang sama pada header paket \citep{park2024fast}. Definisi paling umum dari sebuah aliran unidirectional (satu arah) didasarkan pada 5-tuple, yang terdiri dari: Alamat IP Sumber (Source IP), Port Sumber (Source Port), Alamat IP Tujuan (Destination IP), Port Tujuan (Destination Port), dan Protokol Transportasi (misalnya, TCP atau UDP) \citep{park2024fast}.
+
+\begin{figure}[h!]
+    \centering
+    \begin{tikzpicture}[
+        scale=1,
+        every node/.style={font=\small},
+        >=Stealth
+    ]
+    % Nodes
+    \node (client) [draw, rounded corners, minimum width=2.8cm, minimum height=1cm, align=center] {Klien\\(Source IP, Source Port)};
+    \node (server) [draw, rounded corners, minimum width=2.8cm, minimum height=1cm, right=6cm of client, align=center] {Server\\(Destination IP, Destination Port)};
+    
+    % Brace to indicate shared 5-tuple (moved to top with more space)
+    \draw [decorate,decoration={brace,amplitude=8pt}, thick]
+    ($(client.north west)+(-0.4,0.8)$) -- node[above=10pt, align=center, text width=7cm]{\textbf{5-tuple:} Source IP, Source Port, Dest. IP, Dest. Port, Protocol} ($(server.north east)+(0.4,0.8)$);
+    
+    % Unidirectional flow arrow
+    \draw[->, thick] (client) -- node[above, align=center]{\textbf{Unidirectional Flow}\\Protocol (TCP/UDP)} (server);
+    
+    % Label for bidirectional section
+    \node at ($(client)!0.5!(server) + (0,-1.8)$) {\textbf{Bidirectional Flow (Session)}};
+    
+    % Bidirectional flow arrows
+    \draw[<->, thick] ($(client.south)+(0,-2.5)$) -- node[below, align=center, text width=6cm]{Aggregated Packets in Both Directions (5-tuple shared, roles reversible)} ($(server.south)+(0,-2.5)$);
+    
+    \end{tikzpicture}
+    \caption{Definisi \textit{flow}.}
+    \label{fig:def-flow}
+\end{figure}
+
+Namun, untuk analisis perilaku yang lebih komprehensif, konsep aliran dua-arah (bidirectional flow) atau sesi (session) sering digunakan \citep{huoh2022flow}. Aliran dua-arah merepresentasikan "percakapan" jaringan yang lengkap antara dua titik akhir. Aliran ini didefinisikan menggunakan 5-tuple yang sama, namun mengagregasi paket dari kedua arah (misalnya, dari Klien ke Server dan dari Server ke Klien), di mana alamat dan port sumber serta tujuan dapat dibalik \citep{huoh2022flow}.
+
+\subsection{Keunggulan Pendekatan Berbasis Aliran}
+Keunggulan teoretis fundamental dari analisis berbasis aliran adalah pergeseran dari inspeksi paket individual ke analisis perilaku agregat dari sebuah "percakapan" jaringan \citep{huoh2022flow, razooqi2025vpn}. Menganalisis paket secara terisolasi seringkali tidak memberikan informasi kontekstual yang cukup untuk melakukan identifikasi, terutama ketika payload dienkripsi \citep{lin2022bert}.
+
+Sebaliknya, sebuah aliran, sebagai agregat dari banyak paket, menyimpan pola-pola statistik dan temporal yang kaya. Aliran data memungkinkan penangkapan informasi laten dalam dimensi temporal dan relasi antar paket \citep{huoh2022flow}. Pola-pola ini—seperti durasi total percakapan, volume total data yang dipertukarkan, distribusi ukuran paket, dan ritme waktu antar-kedatangan paket (IAT)—secara kolektif menciptakan "sidik jari" perilaku (behavioral fingerprint) yang dapat digunakan oleh model machine learning untuk membedakan berbagai aplikasi atau layanan, bahkan ketika data dienkripsi \citep{razooqi2025vpn}.
+
+\section{Rekayasa Fitur Statistik (Statistical Feature Engineering)}
+Rekayasa fitur statistik adalah proses sistematis mengekstraksi atribut numerik dari data aliran (flow) jaringan yang mewakili perilaku trafik dalam bentuk terkuantisasi. Fitur statistik ini memudahkan deteksi dan klasifikasi trafik terenkripsi, khususnya pada jaringan modern di mana payload terenkripsi sepenuhnya dan inspeksi isi tidak dimungkinkan. Pendekatan ini didasarkan pada teori probabilitas dan statistik, karena distribusi statistik serta dinamika temporal traffic mampu membedakan aplikasi atau layanan jaringan tanpa harus mengakses data isian (payload) \citep{Yasameen2025, DraperGil2016, Lotfollahi2019}.
+
+
+
+\subsection{Fitur Statistik Level Aliran (Flow-Level Statistical Features)}
+Fitur pada level aliran menggambarkan karakteristik agregat dari satu sesi komunikasi (flow) dalam jaringan. Meskipun payload yang terenkripsi tidak dapat diinspeksi, perilaku flow masih dapat dijelaskan melalui fitur statistik berikut:
+
+\begin{itemize}
+    \item \textbf{Durasi total (Total Duration):} Lama waktu antara paket pertama dan terakhir pada flow, digunakan untuk mengidentifikasi pola sesi pada aplikasi tertentu \citep{AlFayoumi2022, Liu2024}.
+    \item \textbf{Volume total data (Total Bytes):} Jumlah keseluruhan byte yang dikirimkan dalam satu flow, merepresentasikan intensitas transfer data \citep{DraperGil2016}.
+    \item \textbf{Jumlah total paket (Total Packets):} Total paket yang dikirim pada satu flow, memperlihatkan karakter penggunaan komunikasi aplikasi berbeda \citep{Razooqi2025}.
+    \item \textbf{Distribusi ukuran paket (Packet Size Distribution):} Statistik seperti rata-rata, deviasi standar, minimum, dan maksimum dari ukuran paket dalam flow, memberikan insight pola aplikasi misal transfer file (paket besar konsisten) atau VoIP (paket kecil fluktuatif) \citep{Shapira2021}.
+    \item \textbf{Fitur statistik waktu antar-paket (Inter-Arrival Time/IAT):} Statistik rata-rata, deviasi standar, minimum, dan maksimum waktu antar-kedatangan paket dalam suatu flow, efektif membedakan aplikasi real-time dengan aplikasi non-real-time \citep{Yao2022, DraperGil2016}.
+\end{itemize}
+
+Fitur flow-level sangat populer karena tetap stabil terhadap perubahan enkripsi dan protokol, terbukti handal dalam berbagai pendekatan deteksi dan klasifikasi aplikasi pada infrastruktur jaringan modern \citep{Yasameen2025, Liu2024}.
+
+\begin{figure}[h!]
+    \centering
+    \begin{tikzpicture}[
+        scale=0.9,
+        every node/.style={transform shape, font=\small},
+        node distance=5cm,  % Increased from 3cm
+        >=Stealth
+    ]
+    % Nodes
+    \node (client) [draw, rounded corners, minimum width=2.8cm, minimum height=1cm, align=center] {Klien\\(Source IP, Source Port)};
+    \node (server) [draw, rounded corners, minimum width=2.8cm, minimum height=1cm, right of=client, align=center] {Server\\(Destination IP, Destination Port)};
+    
+    % Unidirectional flow arrow
+    \draw[->, thick] (client) -- node[above, align=center, yshift=2pt]{\textbf{Unidirectional Flow}\\Protocol (TCP/UDP)} (server);
+    
+    % Label
+    \node at ($(client)!0.5!(server) + (0,-1.5)$) {\textbf{Bidirectional Flow (Session)}};
+    
+    % Bidirectional flow arrows
+    \draw[<->, thick] ($(client.south)+(0,-2.2)$) -- node[below, align=center]{Aggregated Packets in Both Directions\\(5-tuple shared, roles reversible)} ($(server.south)+(0,-2.2)$);
+    
+    % Brace to indicate shared 5-tuple
+    \draw [decorate,decoration={brace,amplitude=8pt}, thick]
+    ($(client.north west)+(-0.4,0.5)$) -- node[above=8pt, align=center]{\textbf{5-tuple:} Source IP, Source Port,\\Dest. IP, Dest. Port, Protocol} ($(server.north east)+(0.4,0.5)$);
+    \end{tikzpicture}
+    \caption{Definisi \textit{flow}.}
+    \label{fig:def-flow}
+\end{figure}
+
+\subsection{Fitur Statistik Level Burst (Burst-Level Statistical Features)}
+Konsep burst-level features didasarkan pada penemuan fenomena burst-packet, yaitu periode pengiriman paket intensif diikuti waktu jeda yang cukup lama (idle) pada suatu aliran trafik. Burst dan idle time menjadi representasi dinamika makro interaksi aplikasi dengan server atau sesama klien \citep{Lotfollahi2019}.
+
+\begin{itemize}
+    \item \textbf{Jumlah total burst:} Banyaknya burst atau periode aktif dalam satu aliran, terkait erat dengan model komunikasi aplikasi (misal aplikasi chat menghasilkan banyak burst singkat) \citep{Jorgensen2024, Kotak2025}.
+    \item \textbf{Statistik paket per-burst:} Meliputi jumlah paket, volume data, dan durasi per-burst yang terjadi dalam satu sesi komunikasi. Karakteristik ini dapat digunakan untuk membedakan aplikasi berbasis komunikasi periodik atau kontinu \citep{Fesl2024}.
+    \item \textbf{Waktu jeda antar-burst (Inter-burst Idle Time):} Mean, minimum, maksimum waktu antar burst, sebagai indikator kelembaman protokol aplikasi tertentu \citep{Yasameen2025, DraperGil2016}.
+\end{itemize}
+
+Analisis burst-level features memperkaya flow-level features, khususnya dalam mendeteksi aplikasi atau layanan dengan pola trafik makro atau interaktif seperti video streaming, cloud storage, dan real-time communication \citep{Kotak2025, Liu2024}.
+
+Studi terkini menegaskan flow-level dan burst-level statistical features tetap menjadi tulang punggung sistem deteksi serta identifikasi aplikasi, baik berbasis machine learning klasik maupun deep learning end-to-end, terutama untuk trafik yang terenkripsi secara penuh \citep{Yasameen2025, DraperGil2016, Lotfollahi2019}.
+
+\section{Alur Kerja Pengelolaan Tugas Akhir}
+\label{sec:alur_kerja}
+Untuk memahami konteks dan tujuan pengembangan sistem D'Office, penting untuk terlebih dahulu memetakan alur kerja pengajuan dan pelaksanaan \ac{TA} yang berlaku di \ac{PSTK UI}. 
+Alur kerja ini, yang menjadi dasar dari analisis kebutuhan sistem, didokumentasikan secara resmi oleh \ac{DTE} \citep{DTEUI:2025} sebagai induk dari \ac{PSTK UI}. 
+Secara garis besar, alur kerja tersebut dapat dibagi menjadi lima tahapan utama, yang melibatkan interaksi antara Mahasiswa, Dosen, dan Sekretariat Departemen, seperti diilustrasikan pada Gambar~\ref{fig:alur-kerja-sst}.
+
+\begin{figure}[h!]
+    \centering
+    \resizebox{0.2\textwidth}{!}{
+    \begin{tikzpicture}[
+        node distance=1.5cm,
+        auto,
+        tahap/.style={rectangle, rounded corners, draw, fill=blue!10, text width=8em, text centered, minimum height=3em},
+        panah/.style={draw, -Latex, thick}
+    ]
+        % Mendefinisikan posisi node tahapan
+        \node [tahap] (prapengerjaan) {1. Pra-Pengerjaan \& Pengajuan Judul};
+        \node [tahap, below=of prapengerjaan] (bimbingan) {2. Pengerjaan \& Bimbingan};
+        \node [tahap, below=of bimbingan] (sidang) {3. Pendaftaran \& Pelaksanaan Sidang};
+        \node [tahap, below=of sidang] (pascSidang) {4. Revisi \& Pengumpulan Final};
+        \node [tahap, below=of pascSidang] (yudisium) {5. Yudisium \& Kelulusan};
+        
+        % Menggambar panah alur kerja
+        \draw [panah] (prapengerjaan) -- (bimbingan);
+        \draw [panah] (bimbingan) -- (sidang);
+        \draw [panah] (sidang) -- (pascSidang);
+        \draw [panah] (pascSidang) -- (yudisium);
+    \end{tikzpicture}
+    }
+    \caption{Diagram alur kerja tingkat tinggi untuk proses penyelesaian Tugas Akhir.}
+    \label{fig:alur-kerja-sst}
+\end{figure}
+
+Kelima tahapan tersebut dapat dirinci sebagai berikut:
+\begin{enumerate}
+    \item \textbf{Tahap Pra-Pengerjaan:} Tahap ini dimulai dengan mahasiswa mengambil SKS \ac{TA} di \ac{SIAK-NG}. 
+    Setelah itu, mahasiswa mengajukan judul dan calon dosen pembimbing melalui sistem D'Office, yang kemudian akan dibahas dan ditetapkan oleh pihak sekretariat \ac{PSTK UI}.
+    \item \textbf{Tahap Pengerjaan dan Bimbingan:} Merupakan fase inti di mana mahasiswa melakukan penelitian dan penyusunan naskah di bawah arahan dosen pembimbing. 
+    Selama tahap ini, mahasiswa diwajibkan untuk secara rutin mengisi catatan bimbingan di D'Office.
+    \item \textbf{Tahap Sidang:} Setelah naskah disetujui oleh pembimbing, mahasiswa mengunggah draf siap sidang ke D'Office untuk dijadwalkan sidangnya. 
+    Pelaksanaan sidang melibatkan dosen pembimbing dan penguji, yang kemudian akan memberikan nilai serta catatan revisi melalui D'Office.
+    \item \textbf{Tahap Pasca-Sidang:} Mahasiswa mengerjakan revisi berdasarkan catatan dari dewan penguji. 
+    Setelah disetujui, naskah final yang telah ditandatangani lengkap diunggah kembali ke D'Office dan juga ke repositori perpustakaan pusat UI.
+    \item \textbf{Tahap Yudisium:} Merupakan tahap administrasi akhir di mana sekretariat departemen melakukan verifikasi semua berkas dan nilai. 
+    Setelah rapat yudisium, status kelulusan mahasiswa akan diperbarui di SIAK-NG, yang menjadi syarat untuk pendaftaran wisuda.
+\end{enumerate}
+
+Kelima tahapan tersebut melibatkan serangkaian aktivitas spesifik yang harus dilakukan oleh berbagai pihak, mulai dari mahasiswa hingga bagian akademik. 
+Tabel~\ref{tab:aktivitas-sst} merangkum beberapa aktivitas paling krusial dalam siklus hidup tugas akhir yang menjadi fokus dalam pengembangan sistem D'Office berdasarkan dokumentasi resmi\citep{DTEUI:2025}.
+
+\begin{table}[h!]           
+    \captionsetup{justification=justified, singlelinecheck=false}
+    \caption{Rincian aktivitas kunci dalam alur kerja tugas akhir.}
+    \label{tab:aktivitas-sst}
+    \begin{tabularx}{\linewidth}{|c|X|l|}
+        \hline
+        \textbf{No.} & \textbf{Aktivitas} & \textbf{Pihak Terlibat Utama} \\
+        \hline
+        1 & Mengambil SKS Tugas Akhir di sistem SIAK-NG. & Mahasiswa \\
+        \hline
+        3 & Mengajukan judul SST dan calon dosen pembimbing melalui D'Office. & Mahasiswa \\
+        \hline
+        7 & Departemen menetapkan dosen pembimbing untuk setiap mahasiswa. & Ketua Program Studi melalui Sekretariat \\
+        \hline
+        9 & Proses bimbingan berlangsung, di mana mahasiswa wajib mengisi Catatan Bimbingan di D'Office. & Mahasiswa, Dosen Pembimbing \\
+        \hline
+        10 & Mengunggah draf buku \ac{TA} yang siap sidang dan catatan/log bimbingan ke D'Office. & Mahasiswa \\
+        \hline
+        13 & Menghadiri sidang sesuai peran masing-masing. & Mahasiswa, Dosen Pembimbing, Dosen Penguji \\
+        \hline
+        14 & Dewan penguji mengisi nilai dan memberikan catatan revisi melalui sistem D'Office. & Dosen Pembimbing, Dosen Penguji \\
+        \hline
+        17 & Mengunggah buku hasil revisi yang sudah ditandatangani lengkap beserta berkas pendukung lainnya ke D'Office. & Mahasiswa \\
+        \hline
+        21 & Mendaftar yudisium dan melengkapi berkas kelulusan. & Mahasiswa \\
+        \hline
+        22 & Verifikasi akhir berkas di D'Office dan data di SIAK-NG oleh \ac{DTE}. & Sekretariat Departemen \\
+        \hline
+    \end{tabularx}
+\end{table}
+
+Alur kerja yang kompleks dan melibatkan banyak aktivitas serta beberapa sistem inilah yang menjadi dasar justifikasi perlunya sebuah sistem terpusat seperti D'Office untuk menyederhanakan dan mengelola proses tersebut. 
+Sistem D'Office dirancang untuk mendigitalisasi dan memfasilitasi sebagian besar aktivitas yang tercantum di atas, terutama yang berkaitan dengan pengajuan, penjadwalan, dan pengunggahan dokumen.
+
+\section{Landasan Teori}
+\label{sec:landasan_teori}
+Bagian ini menguraikan konsep-konsep teoretis yang menjadi dasar dalam perancangan dan implementasi sistem D'Office. 
+Landasan teori ini mencakup metodologi pengembangan perangkat lunak, arsitektur sistem, prinsip interaksi manusia dan komputer, hingga penggunaan Latex untuk membuat templat dokumen.
+
+\subsection{Metodologi Pengembangan Perangkat Lunak}
+\label{subsec:metodologi_dev}
+Pengembangan sebuah sistem perangkat lunak yang kompleks seperti D'Office memerlukan sebuah kerangka kerja yang terstruktur untuk memastikan kualitas dan ketercapaian tujuan. 
+Kerangka kerja ini dikenal sebagai metodologi pengembangan perangkat lunak, yang secara umum mengikuti Siklus Hidup Pengembangan Sistem atau \ac{SDLC}.
+
+Dalam praktik rekayasa perangkat lunak, terdapat berbagai variasi model SDLC. 
+Untuk pengembangan D'Office, model yang diadopsi adalah model \textbf{\textit{prototyping}}. 
+Model ini, seperti diilustrasikan pada Gambar~\ref{fig:prototyping-model}, menekankan pada pembangunan versi awal dari sistem (purwarupa) yang kemudian dievaluasi oleh pengguna. 
+Umpan balik dari pengguna kemudian digunakan untuk menyempurnakan purwarupa secara iteratif.
+
+\begin{figure}[H]
+    \centering
+    \resizebox{0.6\textwidth}{!}{
+    \begin{tikzpicture}[
+        node distance=1.5cm and 2cm,
+        auto,
+        block/.style={rectangle, draw, fill=blue!10, text width=8em, text centered, minimum height=3em, rounded corners},
+        arrow/.style={thick,->,>=stealth}
+    ]
+        % Mendefinisikan posisi node
+        \node[block] (req) {Analisis Kebutuhan Awal};
+        \node[block, below=of req] (design) {Rancang \& Bangun Purwarupa};
+        \node[block, right=of design] (eval) {Evaluasi oleh Pengguna};
+        \node[block, above=of eval] (refine) {Penyempurnaan Kebutuhan};
+
+        % Menggambar panah alur kerja
+        \draw[arrow] (req) -- (design);
+        \draw[arrow] (design) -- (eval);
+        \draw[arrow] (eval) -- node[above, sloped, font=\scriptsize] {Umpan Balik} (refine);
+        \draw[arrow] (refine) -- (req);
+        
+        % Panah menuju produk final
+        \draw[arrow] (eval.south) -- ++(0,-1cm) node[anchor=north, block, fill=green!20] (final) {Produk \textit{Final}};
+    \end{tikzpicture}
+    }
+    \captionsetup{font=small}
+    \caption{Diagram alur kerja model pengembangan \textit{prototyping}.}
+    \label{fig:prototyping-model}
+\end{figure}
+
+Siklus iteratif antara perancangan, evaluasi, dan penyempurnaan terus berlanjut hingga purwarupa yang dihasilkan telah sesuai dengan kebutuhan pengguna dan siap menjadi produk \textit{final}. 
+Pendekatan ini sangat efektif untuk proyek yang berorientasi pada pengguna seperti D'Office, di mana kejelasan antarmuka dan kemudahan penggunaan menjadi prioritas utama \citep{Pressman:2019}. 
+Menurut Pressman\footnote{Roger S. Pressman (1947-2023) adalah seorang insinyur perangkat lunak Amerika dan penulis buku teks yang dianggap sebagai salah satu referensi utama dalam disiplin ilmu rekayasa perangkat lunak.}, penggunaan purwarupa dapat secara signifikan mengurangi risiko kesalahpahaman kebutuhan antara pengguna dan pengembang.
+
+\subsection{Arsitektur Aplikasi Web}
+\label{subsec:arsitektur_aplikasi}
+Pengembangan aplikasi web modern yang kompleks seperti D'Office memerlukan sebuah pola arsitektur yang terstruktur untuk memastikan skalabilitas, keamanan, dan kemudahan pemeliharaan. 
+Salah satu pola arsitektur yang paling umum dan terbukti andal adalah arsitektur tiga lapis atau \textit{three-tier architecture} \citep{Fowler:2018}. 
+Arsitektur ini memisahkan aplikasi menjadi tiga tingkatan logis dan fisik yang berbeda, seperti diilustrasikan pada Gambar~\ref{fig:three-tier-mvc}.
+
+\begin{figure}[h!]
+    \centering
+    \resizebox{\textwidth}{!}{
+    \begin{tikzpicture}[
+        node distance=2cm,
+        auto,
+        tier/.style={rectangle, draw, thick, fill=blue!10, text width=8em, text centered, minimum height=4em},
+        mvc/.style={rectangle, draw, thick, fill=green!10, text width=6em, text centered, minimum height=3em},
+        line/.style={draw, <->, thick}
+    ]
+        % Three-Tier
+        \node[tier] (client) {Lapis Klien \\ (\textit{Client Tier}) \\ \small Contoh: \textit{Web Browser}};
+        \node[tier, right=5.5cm of client] (app) {Lapis Aplikasi \\ (\textit{Application Tier})};
+        \node[tier, right=5.5cm of app] (data) {Lapis Data \\ (\textit{Data Tier}) \\ \small Contoh: \textit{Database Server}};
+
+        \draw[line] (client) -- (app);
+        \draw[line] (app) -- (data);
+
+        % MVC inside Application Tier
+        \node[mvc, below left=3cm and -0.5cm of app] (controller) {\textit{Controller}};
+        \node[mvc, below=1.2cm of app] (model) {\textit{Model}};
+        \node[mvc, below right=3cm and -0.5cm of app] (view) {\textit{View}};
+
+        \draw[->, thick] (controller) -- (model);
+        \draw[->, thick] (model) -- (view);
+        \draw[->, thick] (view) -- (controller);
+
+        % Braces to show MVC grouping
+        \node[draw, dashed, rounded corners, fit=(controller)(model)(view), label={[align=center]below:{\small Pola Arsitektur \\ \textit{Model-View-Controller} (MVC)}}] {};
+    \end{tikzpicture}
+    }
+    %\captionsetup{font=small}
+    \caption{Ilustrasi Arsitektur Tiga Lapis dengan pola MVC pada Lapis Aplikasi.}
+    \label{fig:three-tier-mvc}
+\end{figure}
+
+Ketiga lapisan tersebut memiliki fungsi yang spesifik dan terpisah untuk memastikan modularitas dan efisiensi. 
+Lapis pertama adalah Lapis Klien (\textit{Client/Presentation Tier}), yang merupakan lapisan terdepan yang berinteraksi langsung dengan pengguna. 
+Dalam konteks aplikasi web seperti D'Office, lapisan ini adalah peramban web (\textit{web browser}) yang berjalan di komputer atau perangkat seluler pengguna. 
+Tugas utamanya adalah menampilkan antarmuka pengguna \ac{UI/UX} yang telah dirancang dan mengirimkan setiap permintaan dari pengguna ke lapis aplikasi.
+
+Lapis kedua adalah Lapis Aplikasi (\textit{Application/Logic Tier}), yang berfungsi sebagai ``otak'' dari sistem. Lapisan ini terdiri dari \textit{server} aplikasi yang menjalankan semua logika bisnis. 
+Ia menerima permintaan dari lapis klien, memprosesnya sesuai aturan yang berlaku, dan berinteraksi dengan lapis data untuk mengambil atau menyimpan informasi. 
+
+Gambar~\ref{fig:three-tier-mvc} juga memperlihatkan \textit{level} desain perangkat lunak dari Lapis Aplikasi. 
+Pada \textit{level} tersebut, logika pada lapis aplikasi umumnya diorganisasi menggunakan pola \ac{MVC}\citep{gammadesign}. 
+Pola ini memisahkan tanggung jawab perangkat lunak ke dalam tiga komponen utama. \textit{Model} bertugas merepresentasikan data dan aturan bisnis yang terkait dengannya, termasuk pengelolaan serta interaksi dengan basis data. 
+\textit{View} bertanggung jawab menyajikan data kepada pengguna dalam bentuk antarmuka yang mudah dipahami. 
+Sedangkan \textit{Controller} berfungsi sebagai penghubung antara pengguna dan sistem: menerima input dari lapis klien, meneruskannya ke Model untuk diproses, lalu menentukan bagaimana hasil tersebut ditampilkan melalui \textit{View}. 
+Pemisahan ini membuat aplikasi lebih modular, mudah dikembangkan, dan lebih terjaga dari sisi pemeliharaan.
+
+Lapis ketiga adalah Lapis Data (\textit{Data Tier}), yang bertanggung jawab penuh atas penyimpanan dan pengelolaan data secara persisten. 
+Lapisan ini biasanya terdiri dari satu atau lebih server basis data (misalnya, MySQL\citep{mysql}). 
+Untuk mengambil atau memanipulasi data, Lapis Aplikasi mengirimkan perintah khusus yang disebut kueri (\textit{query}) ke \textit{server} basis data. 
+Kueri pada dasarnya adalah ``pertanyaan'' yang diajukan ke basis data, misalnya ``\texttt{tampilkan semua mahasiswa bimbingan Dosen X}''. 
+Kecepatan eksekusi kueri pada lapisan ini menjadi faktor yang sangat krusial, karena secara langsung memengaruhi waktu respons keseluruhan yang dirasakan oleh pengguna.
+
+Kinerja kueri dapat sangat bervariasi tergantung pada kompleksitasnya. 
+Sebuah kueri sederhana yang mengambil satu baris data berdasarkan kunci uniknya akan dieksekusi dengan sangat cepat. 
+Sebaliknya, kueri yang kompleks, seperti yang memerlukan penggabungan (\textit{JOIN}) beberapa tabel besar atau pencarian teks pada jutaan baris, dapat menjadi lambat dan menjadi \textit{bottleneck} performa aplikasi. 
+Tabel~\ref{tab:contoh-kueri} memberikan contoh visual dari kedua jenis kueri tersebut dalam bahasa SQL.
+
+\begin{table}[H]
+    \centering
+    \captionsetup{justification=justified, singlelinecheck=false}
+    \caption{Contoh kueri basis data sederhana dan kompleks.}
+    \label{tab:contoh-kueri}
+    \begin{tabular}{|p{0.50\textwidth}|p{0.50\textwidth}|}
+        \hline
+        \textbf{Kueri Sederhana (Cepat)} & \textbf{Kueri Kompleks (Potensial Lambat)} \\
+        \hline
+        \vspace{0.5em}
+        \begin{minted}[fontsize=\small, frame=none]{sql}
+-- Mengambil 1 mahasiswa
+-- berdasarkan NPM (unik)
+
+SELECT * FROM mahasiswas 
+WHERE npm = '2206123456';
+        \end{minted} 
+        & 
+        \vspace{0.5em}
+        \begin{minted}[fontsize=\small, frame=none]{sql}
+-- Mencari semua sidang 
+-- dengan kata kunci "AI"
+-- yang dibimbing oleh "Budi"
+
+SELECT s.*
+FROM sidangs s
+JOIN tugas_akhirs ta ON s.tugas_akhir_id = ta.id
+JOIN dosens d ON ta.pembimbing_id = d.id
+WHERE ta.judul LIKE '%AI%' 
+AND d.nama = 'Budi';
+        \end{minted} 
+        \\
+        \hline
+    \end{tabular}
+\end{table}
+
+Dengan mengadopsi arsitektur tiga lapis ini, perancangan infrastruktur sistem D'Office di Bab~\ref{cha:perancangansistem} dapat secara jelas memetakan setiap komponen perangkat lunak ke dalam lapisan perangkat keras yang sesuai. 
+Pemilihan desain basis data yang optimal pada Lapis Data, termasuk strategi seperti \textit{indexing} untuk mempercepat kueri kompleks, menjadi fundamental untuk membangun sistem yang responsif.
+
+\subsection{Interaksi Manusia dan Komputer}
+\label{subsec:imk}
+Sebuah sistem informasi tidak hanya dinilai dari kecanggihan teknologinya, tetapi juga dari kualitas pengalamannya saat digunakan oleh manusia. 
+Bidang ilmu \ac{IMK} atau \ac{HCI} menyediakan kerangka kerja untuk merancang dan mengevaluasi sistem agar efektif dan memuaskan. 
+Kualitas pengalaman pengguna atau \ac{UX} bersifat multifaset, mencakup lebih dari sekadar kemudahan penggunaan. 
+Sebuah model yang sering digunakan untuk memetakan aspek-aspek \ac{UX} adalah \textit{UX Honeycomb} yang diperkenalkan oleh Morville \citep{Morville:2004}, seperti yang diilustrasikan pada Gambar~\ref{fig:ux-honeycomb}.
+
+\begin{figure}[h!]
+    \centering
+    \resizebox{0.5\textwidth}{!}{
+    \begin{tikzpicture}[
+        hex/.style={shape=regular polygon, regular polygon sides=6, minimum size=3cm, draw, fill=blue!10, text centered, text width=2cm},
+        node distance=1.7cm
+    ]
+        % Mendefinisikan posisi node honeycomb
+        \node[hex] (valuable) {Bernilai (\textit{Valuable})};
+        \node[hex, above=of valuable] (useful) {Berguna (\textit{Useful})};
+        \node[hex, above left=of valuable] (usable) {Dapat Digunakan (\textit{Usable})};
+        \node[hex, below left=of valuable] (findable) {Mudah Ditemukan (\textit{Findable})};
+        \node[hex, below=of valuable] (credible) {Kredibel (\textit{Credible})};
+        \node[hex, below right=of valuable] (accessible) {Aksesibel (\textit{Accessible})};
+        \node[hex, above right=of valuable] (desirable) {Menarik (\textit{Desirable})};
+    \end{tikzpicture}
+    }
+    \caption{Diagram \textit{UX Honeycomb} yang mengilustrasikan tujuh faset pengalaman pengguna (diadaptasi dari Morville, 2004).}
+    \label{fig:ux-honeycomb}
+\end{figure}
+
+Setiap faset dalam diagram \textit{UX Honeycomb} di atas merupakan target kualitas yang ingin dicapai dalam perancangan sistem D'Office. 
+Faset-faset seperti Berguna (\textit{Useful}), Dapat Digunakan (\textit{Usable}), dan Menarik (\textit{Desirable}) menjadi landasan dalam perancangan antarmuka dan fungsionalitas sistem.
+
+\subsection{LaTeX sebagai Sistem Tata Letak Dokumen}
+\label{subsec:latex_dasar}
+Selain sistem manajemen berbasis web, penelitian ini juga menghasilkan sebuah templat tugas akhir yang dibangun menggunakan \LaTeX. 
+\LaTeX~ adalah sebuah sistem penyiapan dokumen di mana pengguna fokus pada penulisan konten dan struktur logis, sementara \LaTeX~ akan menangani tata letak visual secara otomatis \citep{Lamport:1994}.
+
+Prinsip kerja ini diilustrasikan pada Tabel~\ref{tab:latex-example}, yang menunjukkan bagaimana kode sumber di sebelah kiri menghasilkan dokumen yang terformat secara profesional di sebelah kanan. 
+Penggunaan paket \texttt{minted} di sini juga berfungsi sebagai contoh cara menampilkan blok kode di dalam laporan \ac{TA}.
+
+\begin{table}[h!]
+    \captionsetup{justification=justified, singlelinecheck=false}
+    \caption{Contoh kode sumber \LaTeX~ dan hasilnya.}
+    \label{tab:latex-example}
+    \begin{tabular}{|p{0.50\textwidth}|p{0.50\textwidth}|}
+        \hline
+        \textbf{Kode Sumber \LaTeX~ (\texttt{.tex})} & \textbf{Hasil Tampilan (\texttt{.pdf})} \\
+        \hline
+        \vspace{0.5em}
+        \begin{minted}[fontsize=\small]{latex}
+\section{Pendahuluan}
+\label{sec:pendahuluan}
+
+Tugas akhir ini membahas...
+
+...seperti yang dijelaskan pada 
+Seksi~\ref{sec:pendahuluan}.
+        \end{minted} 
+        & 
+        % Ini adalah simulasi hasil render
+        \vspace{0.5em}
+        \LARGE{\textbf{1 \quad Pendahuluan}} \normalsize
+        \par
+        \vspace{1em}
+        Tugas akhir ini membahas...
+        \par
+        \vspace{0.5em}
+        ...seperti yang dijelaskan pada Seksi 1.
+        \\
+        \hline
+    \end{tabular}
+\end{table}
+
+Seperti yang terlihat pada contoh di atas, pengguna hanya perlu menulis perintah sederhana seperti \texttt{\bslash section\{Pendahuluan\}} dan \texttt{\bslash label\{...\}}. 
+\LaTeX~ secara otomatis akan menangani penomoran bab (menjadi ``1''), format huruf, spasi, dan bahkan rujukan silang (mengubah \texttt{\bslash ref\{...\}} menjadi ``1''). 
+Inilah keunggulan utama yang mendasari pemilihan \LaTeX~ untuk templat ini:
+\begin{itemize}
+    \item \textbf{Kepatuhan Format Otomatis:} Templat ini `mengunci' aturan dari Pedoman Penulisan UI, sehingga mahasiswa dapat fokus pada konten.
+    \item \textbf{Manajemen Referensi Andal:} Pengelolaan sitasi dan daftar pustaka menjadi otomatis dan konsisten.
+    \item \textbf{Stabilitas untuk Dokumen Panjang:} Sangat andal untuk dokumen kompleks dengan banyak gambar dan tabel.
+\end{itemize}
+Dengan demikian, templat \LaTeX~ ini menjadi bagian integral dari solusi yang ditawarkan D'Office untuk meningkatkan efisiensi penyusunan tugas akhir.
+
+\section{Pedoman Penulisan Tugas Akhir Universitas Indonesia}
+\label{sec:pedoman_ui}
+Salah satu tujuan dari pengembangan sistem D'Office adalah untuk membantu mahasiswa dalam mematuhi format penulisan karya ilmiah yang baku. 
+Standar acuan yang digunakan dalam penelitian ini adalah pedoman resmi universitas yang diatur dalam Surat Keputusan Rektor \citep{SKRektorUI:2017}. 
+Pedoman ini bersifat wajib dan menjadi standar mutu penulisan di lingkungan Universitas Indonesia.
+
+\subsection{Sistematika Penulisan Tugas Akhir}
+Berdasarkan pedoman tersebut, sebuah tugas akhir terdiri dari tiga bagian utama: bagian awal, bagian isi, dan bagian akhir. 
+Urutan halaman yang harus diikuti disajikan dalam kerangka berikut:
+
+\vspace{1em} % Memberi sedikit spasi sebelum tabel
+\noindent % Mencegah indentasi
+\begin{tabularx}{\linewidth}{@{} l X @{}}
+    \multicolumn{2}{@{}l}{\textbf{1. Bagian Awal}} \\
+    & \textbullet~Halaman Sampul \\
+    & \textbullet~Halaman Judul \\
+    & \textbullet~Halaman Pernyataan Orisinalitas \\
+    & \textbullet~Halaman Pengesahan \\
+    & \textbullet~Kata Pengantar/Ucapan Terima Kasih (jika ada) \\
+    & \textbullet~Halaman Pernyataan Persetujuan Publikasi Karya Ilmiah \\
+    & \textbullet~Abstrak (dalam Bahasa Indonesia dan Inggris) \\
+    & \textbullet~Daftar Isi \\
+    & \textbullet~Daftar Tabel, Daftar Gambar, dan Daftar Lain (jika ada) \\
+    & \textbullet~Daftar Lampiran (jika ada) \\
+    \\
+    \multicolumn{2}{@{}l}{\textbf{2. Bagian Isi}} \\
+    & \textbullet~Terdiri dari bab-bab (Pendahuluan hingga Kesimpulan), disesuaikan dengan kebutuhan bidang ilmu. \\
+    \\
+    \multicolumn{2}{@{}l}{\textbf{3. Bagian Akhir}} \\
+    & \textbullet~Daftar Referensi \\
+    & \textbullet~Lampiran (jika ada) \\
+\end{tabularx}
+
+% --- BLOK PENEKANAN YANG BARU ---
+\noindent\fbox{%
+    \parbox{\dimexpr\textwidth-2\fboxsep-2\fboxrule\relax}{%
+        \textbf{Catatan Penting Mengenai Contoh Halaman:}\\
+        Untuk kejelasan visual, contoh tata letak (\textit{layout}) dan format dari setiap halaman yang disebutkan dalam sistematika di atas (seperti Halaman Sampul, Halaman Pernyataan Orisinalitas, Halaman Pengesahan, dan seterusnya.) dapat ditemukan pada \textbf{Lampiran A} dari buku tugas akhir ini.
+    }%
+}
+
+\subsection{Ringkasan Aturan Format}
+Untuk kemudahan penelusuran, ringkasan dari beberapa aturan format kunci yang dibahas dalam pedoman disajikan dalam Tabel~\ref{tab:format-ta-resmi}, lengkap dengan rujukan halaman pada dokumen aslinya.
+
+\begin{longtable}{|p{4.5cm}|p{8.5cm}|c|}
+    \captionsetup{justification=justified, singlelinecheck=false}
+    \caption{Ringkasan Aturan Kunci dari Pedoman Teknis Penulisan TA UI 2017.}
+    \label{tab:format-ta-resmi} \\
+
+    \hline
+    \textbf{Komponen} & \textbf{Aturan Spesifik} & \textbf{Hal.} \\
+    \hline
+    \endfirsthead
+
+    \multicolumn{3}{l}%
+    {{\footnotesize \textbf{Tabel~\thetable}\space (Sambungan)}} \\
+    \hline
+    \textbf{Komponen} & \textbf{Aturan Spesifik} & \textbf{Hal.} \\
+    \hline
+    \endhead
+
+    \hline \multicolumn{3}{r}{{\textit{Lanjut ke halaman berikutnya}}} \\
+    \endfoot
+
+    \hline
+    \endlastfoot
+
+    % Isi Tabel berdasarkan PDF dengan referensi halaman
+    Kertas & Jenis: HVS, Berat: 80 gram, Ukuran: A4. & 19 \\
+    \hline
+    Margin Pengetikan & Batas atas, bawah, kiri, dan kanan masing-masing 3 cm dari tepi kertas. & 19 \\
+    \hline
+    Pengetikan Naskah Utama & Jenis huruf: Times New Roman 12 poin, dengan 1,5 spasi dan perataan teks rata kiri-kanan (\textit{justify}). & 20 \\
+    \hline
+    Judul Bab & Times New Roman 12 poin, kapital, tebal, rata tengah. Spasi tunggal jika lebih dari satu baris. & 24 \\
+    \hline
+    Judul Sub-bab & Mengikuti format naskah utama: Times New Roman 12 poin, tebal, rata kiri. Spasi ke paragraf 1,5 spasi. & 24 \\
+    \hline
+    Penomoran Halaman (Bagian Awal) & Angka Romawi kecil (i, ii, dst.) di posisi tengah bawah. & 20 \\
+    \hline
+    Penomoran Halaman (Isi \& Akhir) & Angka Latin (1, 2, dst.). Posisi normal di sudut kanan atas, kecuali pada halaman awal bab (di tengah bawah). & 20 \\
+    \hline
+    Judul Tabel & Di atas tabel, rata kiri atau tengah. Times New Roman (disarankan 10 poin). Jarak 1,5 spasi terhadap tabel. Spasi tunggal jika judul lebih dari satu baris. & 26 \\
+    \hline
+    Judul Gambar & Di bawah gambar, rata tengah. Times New Roman (disarankan 10 poin). Jarak 1,5 spasi terhadap gambar. Spasi tunggal jika judul lebih dari satu baris. & 26 \\
+    \hline
+    Jarak Teks ke Tabel/Gambar & Jarak 3 spasi dari teks sebelum tabel/gambar, dan 1,5 spasi dari caption untuk melanjutkan teks. & 26 \\
+    \hline
+    Persamaan Matematika & Ditulis menjorok 1,5 cm dari kiri, dengan penomoran di sebelah kanan dan rata dengan margin kanan. & 27 \\
+    \hline
+    Abstrak & Maksimal 500 kata, satu paragraf, spasi tunggal, dengan huruf Times New Roman 12 poin. & 23 \\
+    
+\end{longtable}
+Tabel~\ref{tab:format-ta-resmi} hanyalah ringkasan. Mahasiswa tetap diwajibkan untuk merujuk pada pedoman resmi \citep{SKRektorUI:2017} untuk detail yang lebih lengkap.
+
+\section{Kerangka Kerja Evaluasi}
+\label{sec:kerangka_evaluasi}
+Bagian ini mendefinisikan secara spesifik kerangka kerja dan metrik yang akan digunakan untuk mengevaluasi solusi yang diusulkan dan menjawab tujuan penelitian. 
+Setiap metrik dirancang untuk mengukur aspek yang berbeda dari sistem dan templat yang dikembangkan.
+% =======================================================================
+% --- Kerangka Evaluasi Efektivitas Sistem ---
+% =======================================================================
+\subsection{Kerangka Evaluasi Efektivitas Sistem}
+\label{subsec:evaluasi_efektivitas}
+Untuk menjawab tujuan penelitian kedua---mengevaluasi efektivitas sistem D'Office---kerangka evaluasi dibagi menjadi dua domain: evaluasi berbasis pengguna yang mengukur interaksi langsung, dan evaluasi berbasis kinerja yang mengukur performa teknis dari sistem.
+
+\subsubsection{Metrik Berbasis Pengguna (\textit{User-Centric Metrics})}
+Metrik ini berfokus pada interaksi langsung pengguna untuk menilai efektivitas dan efisiensi antarmuka. 
+Pengukuran dilakukan dengan memberikan serangkaian skenario tugas kunci kepada sekelompok pengguna uji. 
+Metrik yang diukur adalah \ac{TSR} dan \ac{ToT} \citep{Sauro:2011}. 
+Berdasarkan dokumen alur kerja \ac{TA} \citep{DTEUI:2025}, tugas-tugas kunci yang akan diuji meliputi:
+\begin{itemize}
+    \item \textbf{Tugas A - Pengajuan Judul (Aktivitas 3):} Pengguna (mahasiswa) diminta untuk mengajukan judul baru beserta calon pembimbing. 
+    Keberhasilan diukur dari terkirimnya formulir dengan data yang valid.
+    \item \textbf{Tugas B - Pendaftaran Sidang (Aktivitas 10):} Pengguna (mahasiswa) diminta mengunggah draf siap sidang dan catatan bimbingan. 
+    Keberhasilan diukur dari berhasilnya pengunggahan dan pengajuan jadwal.
+    \item \textbf{Tugas C - Pengisian Nilai Sidang (Aktivitas 14):} Pengguna (dosen) diminta untuk mengisi nilai dan catatan revisi untuk seorang mahasiswa. 
+    Keberhasilan diukur dari tersimpannya data nilai dan revisi.
+    \item \textbf{Tugas D - Pengunggahan Berkas Final (Aktivitas 17):} Pengguna (mahasiswa) diminta mengunggah seluruh berkas pasca-revisi. 
+    Keberhasilan diukur dari terunggahnya semua dokumen yang disyaratkan.
+\end{itemize}
+
+Keempat tugas di atas dipilih dari serangkaian aktivitas pengelolaan tugas akhir yang dijelaskan pada Seksi~\ref{sec:alur_kerja} karena mencakup titik-titik interaksi paling krusial dalam siklus hidup tugas akhir yang dikelola oleh sistem D'Office. 
+Tugas A mewakili tahap awal (inisiasi), Tugas B dan C mewakili tahap tengah yang paling kompleks (pelaksanaan sidang), dan Tugas D mewakili tahap akhir (penyelesaian). 
+Selain itu, pemilihan tugas-tugas ini juga secara sengaja melibatkan dua aktor utama yang berbeda (mahasiswa dan dosen), sehingga memungkinkan evaluasi sistem dari berbagai perspektif pengguna.
+
+\paragraph{Tingkat Keberhasilan Tugas (\textit{Task Success Rate} - TSR).}
+TSR adalah metrik fundamental untuk mengukur efektivitas sebuah sistem. 
+Metrik ini menghitung persentase pengguna yang berhasil menyelesaikan sebuah skenario tugas yang diberikan tanpa bantuan. 
+Sebuah tugas dianggap berhasil jika pengguna mencapai tujuan akhir yang telah ditentukan. 
+TSR dihitung menggunakan Persamaan~\ref{eq:tsr} \citep{Sauro:2011}.
+\begin{myequation}{Persamaan TSR}
+    \label{eq:tsr}
+    \text{TSR} = \left( \frac{\sum_{i=1}^{N} S_i}{N} \right) \times 100\%
+\end{myequation}
+di mana $N$ adalah total jumlah partisipan dan $S_i$ adalah skor keberhasilan untuk partisipan ke-$i$ (1 jika berhasil, 0 jika gagal).
+
+\paragraph{Waktu Pengerjaan Tugas (\textit{Time on Task} - ToT).}
+ToT adalah metrik utama untuk mengukur efisiensi sistem. 
+Metrik ini mencatat waktu yang dibutuhkan oleh seorang pengguna, dari awal hingga akhir, untuk menyelesaikan sebuah skenario tugas. Hasilnya biasanya disajikan sebagai nilai rata-rata dari seluruh partisipan. 
+Waktu yang lebih singkat mengindikasikan efisiensi yang lebih tinggi, yang berarti pengguna dapat mencapai tujuannya dengan lebih cepat \citep{Sauro:2011}.
+
+\subsubsection{Metrik Berbasis Kinerja Sistem (\textit{System-Centric Metrics})}
+Metrik ini mengukur kinerja teknis di sisi server untuk memastikan sistem tidak hanya mudah digunakan, tetapi juga responsif dan andal.
+
+\paragraph{Waktu Respons Kueri (\textit{Query Response Time}).}
+Metrik ini mengukur waktu (dalam milidetik) yang dibutuhkan oleh server basis data untuk mengeksekusi sebuah perintah \ac{SQL} dan mengembalikan hasilnya. 
+Pengukuran ini penting untuk mengidentifikasi potensi \textit{bottleneck} pada operasi-operasi basis data yang kompleks, seperti yang melibatkan \textit{JOIN} antar beberapa tabel \citep{GarciaMolina:2008}.
+
+\paragraph{Waktu Respons Jaringan (\textit{Time to First Byte} - TTFB).}
+Untuk mengukur kinerja gabungan dari arsitektur tiga lapis yang telah dibahas sebelumnya, terutama untuk mengevaluasi latensi antara Lapis Klien dan Lapis Aplikasi, digunakan metrik \ac{TTFB}. 
+TTFB adalah metrik yang mengukur total waktu yang dibutuhkan sejak peramban pengguna mengirimkan permintaan hingga menerima \textit{byte} pertama dari respons \textit{server}. 
+Metrik ini merupakan indikator yang baik untuk kinerja gabungan dari latensi jaringan dan waktu pemrosesan aplikasi di Lapis Aplikasi. 
+TTFB yang rendah sangat krusial untuk persepsi pengguna terhadap kecepatan sebuah situs web.
+
+
+% =======================================================================
+% --- Kerangka Evaluasi Kepatuhan Format ---
+% =======================================================================
+\subsection{Kerangka Evaluasi Kepatuhan Format}
+\label{subsec:evaluasi_format}
+Untuk menjawab tujuan penelitian ketiga---mengevaluasi kepatuhan format penulisan---diperlukan sebuah metode penilaian yang objektif dan terstruktur. 
+Penelitian ini mengadopsi pendekatan berbasis rubrik yang umum digunakan dalam evaluasi dokumen teknis \citep{Hartley:2015}.
+Sebuah rubrik penilaian dirancang berdasarkan Pedoman Penulisan \ac{TA} \citep{SKRektorUI:2017}. 
+Dokumen yang dievaluasi akan dimulai dengan skor sempurna (100 poin). 
+Poin akan dikurangi untuk setiap ketidaksesuaian format yang ditemukan pada kategori-kategori berikut:
+    \begin{itemize}
+        \item \textbf{Struktur Dokumen (Pengurangan hingga 20 poin):} Kesalahan pada urutan halaman, penomoran bab/sub-bab.
+        \item \textbf{Tipografi dan Margin (Pengurangan hingga 30 poin):} Kesalahan pada jenis/ukuran huruf, spasi baris, dan margin halaman.
+        \item \textbf{Format Tabel dan Gambar (Pengurangan hingga 25 poin):} Kesalahan pada penomoran, posisi caption, dan rujukan sumber.
+        \item \textbf{Format Sitasi dan Referensi (Pengurangan hingga 25 poin):} Ketidakkonsistenan gaya sitasi dan format daftar pustaka.
+    \end{itemize}
+Metrik final yang akan dianalisis adalah Skor Kepatuhan Format rata-rata dari dokumen yang dihasilkan oleh kelompok pengguna dengan dan tanpa bantuan sistem D'Office.
+
+% =======================================================================
+% --- Kerangka Evaluasi Kualitatif ---
+% =======================================================================
+\subsection{Kerangka Evaluasi Kualitatif}
+\label{subsec:evaluasi_kualitatif}
+Untuk menjawab tujuan penelitian keempat dan mendapatkan pemahaman mendalam mengenai pengalaman pengguna, digunakan pendekatan kualitatif.
+\begin{itemize}
+    \item \textbf{Kuesioner \textit{System Usability Scale} (SUS):} Untuk mengukur faset Dapat Digunakan (\textit{Usable}) dari model UX Honeycomb secara kuantitatif, digunakan instrumen standar \textit{System Usability Scale} (SUS). 
+    SUS adalah sebuah kuesioner berisi 10 butir pernyataan dengan skala Likert 5-poin yang memberikan skor tunggal antara 0 hingga 100 untuk merepresentasikan persepsi subjektif pengguna terhadap kebergunaan sistem \citep{Brooke:1996}. 
+    Proses perhitungannya adalah sebagai berikut: untuk butir pernyataan positif (nomor ganjil), kontribusi skornya adalah (posisi skala - 1), sedangkan untuk butir pernyataan negatif (nomor genap), kontribusinya adalah (5 - posisi skala). 
+    Total dari semua kontribusi skor kemudian dikalikan dengan 2,5 untuk mendapatkan skor akhir, sebagaimana dinyatakan dalam Persamaan~\ref{eq:sus}.
+    
+    \begin{myequation}{Skor SUS}
+        \label{eq:sus}
+        \text{Skor SUS} = 2,5 \times \sum_{i=1}^{10} (\text{skor butir ke-}i)
+    \end{myequation}
+    
+    \item \textbf{Wawancara Semiterstruktur:} Sesi wawancara dilakukan untuk menggali lebih dalam mengenai kepuasan pengguna terhadap semua faset UX. 
+    Umpan balik kualitatif ini akan dianalisis menggunakan analisis sentimen.
+\end{itemize}
+
+\section{Studi Pustaka Sistem Sejenis}
+\label{sec:studi_pustaka}
+Sebelum melakukan perancangan sistem D'Office, dilakukan studi terhadap beberapa sistem pengelolaan \ac{TA} yang telah ada, baik yang digunakan di institusi lain maupun produk komersial. 
+Studi ini bertujuan untuk mengidentifikasi fungsionalitas standar, menganalisis kelebihan dan kekurangan dari setiap sistem, serta menemukan celah yang dapat diisi oleh sistem yang diusulkan. Berikut adalah ulasan singkat dari beberapa sistem representatif.
+
+\textbf{Sistem Skripsi Terpadu (SST) \ac{UGM}.} 
+Sistem ini merupakan sistem internal yang dikembangkan oleh UGM dan telah digunakan sejak lama \citep{UGM:2018}. 
+Keunggulan utamanya adalah integrasi yang kuat dengan sistem akademik pusat universitas, sehingga data mahasiswa dan status SKS dapat tersinkronisasi dengan baik. 
+Namun, dari segi antarmuka pengguna (UI), sistem ini masih menggunakan desain lama yang kurang intuitif dan tidak adaptif untuk perangkat mobile.
+
+\textbf{ThesisFlow.} 
+Ini adalah produk perangkat lunak sebagai layanan (\textit{Software as a Service} - SaaS) komersial yang digunakan oleh beberapa universitas di Asia Tenggara \citep{ThesisFlow:2022}. 
+ThesisFlow menawarkan antarmuka yang sangat modern, bersih, dan pengalaman pengguna (UX) yang baik. 
+Namun, kekurangannya adalah sifatnya yang generik. 
+Alur kerja di dalamnya sulit untuk disesuaikan dengan prosedur administrasi yang unik dan spesifik di universitas di Indonesia, seperti proses yudisium yang berlapis.
+
+\textbf{MyThesis Portal \ac{ITB}.} 
+Portal ini dikembangkan secara mandiri oleh ITB dengan fokus pada manajemen dokumen dan progres bimbingan \citep{ITB:2020}. 
+Sistem ini memiliki fitur pelacakan revisi dan log bimbingan yang sangat detail. 
+Akan tetapi, sistem ini belum memiliki modul notifikasi proaktif yang dapat mengingatkan mahasiswa dan dosen mengenai tenggat waktu yang akan datang secara otomatis.
+
+Untuk memberikan gambaran yang lebih jelas, perbandingan fitur dari sistem-sistem tersebut dengan sistem D'Office yang diusulkan disajikan pada Tabel~\ref{tab:perbandingan-sistem}. 
+Mengingat banyaknya fitur yang dibandingkan, tabel ini disajikan dalam orientasi lanskap agar lebih mudah dibaca.
+
+\begin{landscape}
+\vfill % Menambahkan ruang fleksibel di atas
+\begin{table}[p]
+    \centering
+    \captionsetup{justification=justified,singlelinecheck=false}
+    \caption{Perbandingan fitur sistem pengelolaan tugas akhir.}
+    \label{tab:perbandingan-sistem}
+    \begin{tabularx}{\linewidth}{|X|c|c|c|c|}
+        \hline
+        \textbf{Fitur} & \textbf{SST UGM} & \textbf{ThesisFlow} & \textbf{MyThesis ITB} & \textbf{D'Office (Usulan)} \\
+        \hline\hline
+        Pengajuan Judul dan Pembimbing Online & \checkmark & \checkmark & \checkmark & \checkmark \\
+        \hline
+        Pencatatan Log Bimbingan Digital & \checkmark & \checkmark & \checkmark & \checkmark \\
+        \hline
+        Pengunggahan Dokumen Sidang \& Revisi & \checkmark & \checkmark & \checkmark & \checkmark \\
+        \hline
+        Integrasi dengan Sistem Akademik Pusat & \checkmark & -- & -- & \checkmark \\
+        \hline
+        Antarmuka Pengguna (UI/UX) Modern & -- & \checkmark & -- & \checkmark \\
+        \hline
+        Notifikasi Otomatis (Email/Sistem) & -- & \checkmark & -- & \checkmark \\
+        \hline
+        Panduan Format Penulisan Terintegrasi & -- & -- & -- & \checkmark \\
+        \hline
+        Alur Kerja Dapat Disesuaikan (Spesifik UI) & -- & -- & -- & \checkmark \\
+        \hline
+    \end{tabularx}
+    \vspace{1em} % Memberi sedikit spasi di bawah tabel
+    \small{\textit{Catatan:} Tanda \checkmark\ menunjukkan fitur tersedia, sedangkan -- menunjukkan fitur tidak tersedia atau terbatas.}
+\end{table}
+\end{landscape}
+
+% Kode ini adalah kelanjutan dari sub-bab sebelumnya.
+
+\section{Posisi Penelitian}
+\label{sec:posisi_penelitian}
+Berdasarkan analisis terhadap sistem-sistem sejenis yang telah dipaparkan pada Seksi sebelumnya dan dirangkum dalam Tabel~\ref{tab:perbandingan-sistem}, dapat diidentifikasi sebuah celah penelitian yang jelas. 
+Sistem-sistem yang ada saat ini cenderung unggul di satu aspek namun lemah di aspek lainnya. 
+Sistem internal seperti SST UGM memiliki keunggulan integrasi data, namun dengan antarmuka yang sudah ketinggalan zaman. 
+Di sisi lain, produk komersial seperti ThesisFlow menawarkan pengalaman pengguna yang modern, namun tidak dapat disesuaikan untuk alur kerja administrasi yang unik dan spesifik di lingkungan Universitas Indonesia.
+
+Penelitian dan pengembangan sistem D'Office mengambil posisi untuk mengisi celah tersebut dengan mengintegrasikan keunggulan-keunggulan dari berbagai sistem yang ada sambil menutupi kekurangan mereka. 
+Kebaruan (\textit{novelty}) utama dari sistem D'Office terletak pada kombinasi unik dari fungsionalitas yang dirancang khusus untuk menjawab kebutuhan mahasiswa dan dosen di Departemen Teknik Komputer Universitas Indonesia.
+
+Secara spesifik, kontribusi dari penelitian ini adalah:
+\begin{enumerate}
+    \item \textbf{Sistem Terpadu yang Modern:} Menggabungkan fungsionalitas administrasi yang kuat (seperti pada sistem internal universitas) dengan antarmuka pengguna (UI/UX) yang modern dan intuitif (seperti pada produk komersial).
+    \item \textbf{Fitur Proaktif dan Suportif:} Menambahkan fitur notifikasi otomatis untuk tenggat waktu dan panduan format penulisan yang terintegrasi langsung ke dalam alur kerja, di mana kedua fitur ini tidak ditemukan secara bersamaan pada sistem lain yang diulas.
+    \item \textbf{Spesialisasi Kontekstual:} Menyediakan sebuah sistem yang alur kerjanya dirancang secara spesifik untuk mengikuti prosedur akademik dan yudisium yang berlaku di Universitas Indonesia, sebuah tingkat kustomisasi yang tidak ditawarkan oleh produk generik.
+\end{enumerate}
+Dengan demikian, D'Office diposisikan bukan sekadar sebagai sistem informasi biasa, melainkan sebagai sebuah solusi terpadu yang kontekstual dan berpusat pada pengguna untuk meningkatkan efisiensi dan kualitas pengalaman penyusunan tugas akhir.
+

@@ -1,0 +1,1051 @@
+%-----------------------------------------------------------------------------%
+\chapter{\babTiga}
+\label{cha:perancangansistem}
+Bab ini menyajikan langkah-langkah rekayasa teknis yang dilakukan untuk mewujudkan sistem terpadu D’Office. 
+Proses dimulai dari Analisis Kebutuhan Fungsional menggunakan \textit{Use Case Diagram} untuk memetakan interaksi antara aktor dan sistem, kemudian berlanjut ke Perancangan Sistem dan Alur Kerja melalui \textit{Flowchart}, \textit{Activity Diagram}, dan \textit{Sequence Diagram} guna memperjelas alur logika dan pertukaran informasi. 
+Selanjutnya, pada tahap Implementasi Sistem D’Office, rancangan konseptual diterjemahkan ke perangkat lunak nyata dengan arsitektur \textit{MVC}, diagram kelas, dan kode program. 
+Selain itu, penelitian ini juga menghasilkan Templat Penulisan Tugas Akhir dalam format \LaTeX{} dan Microsoft Word untuk memudahkan penyusunan naskah sesuai pedoman resmi. 
+Bab ini ditutup dengan pembahasan Manajemen Proyek, yang menyoroti perencanaan, penjadwalan, dan pemantauan progres, sehingga memberikan gambaran menyeluruh dari analisis hingga produk akhir siap digunakan.
+
+\section{Analisis Kebutuhan Fungsional}
+\label{sec:analisis_kebutuhan}
+Tahap pertama dalam perancangan sistem adalah menerjemahkan alur kerja bisnis yang telah dipaparkan pada Seksi~\ref{sec:alur_kerja} ke dalam serangkaian kebutuhan fungsional yang konkret. 
+Kebutuhan fungsional mendefinisikan interaksi spesifik antara pengguna dan sistem. 
+Untuk memodelkan kebutuhan ini, digunakan pendekatan \textit{Use-Case} yang dipopulerkan dalam \ac{UML} \citep{Booch:2005}.
+
+Diagram \textit{Use-Case} pada Gambar~\ref{fig:use-case} memetakan para aktor utama---yaitu Mahasiswa, Dosen, dan Sekretariat Departemen---dengan fungsionalitas-fungsionalitas utama (kasus penggunaan) yang disediakan oleh sistem D'Office.
+
+\begin{figure}[H]
+    \centering
+    \resizebox{0.9\textwidth}{!}{
+    \begin{tikzpicture}
+        \begin{umlsystem}{Sistem D'Office}
+            % Daftar Use Case di dalam sistem (dengan revisi)
+            \umlusecase[name=ucAjuan, x=0, y=10]{Mengajukan Judul \& Pembimbing}
+            \umlusecase[name=ucSetuju, x=0, y=7]{Menyetujui/Menolak Permintaan Bimbingan}
+            \umlusecase[name=ucTetapkan, x=0, y=5.5]{Menetapkan Bimbingan}
+            \umlusecase[name=ucUnggah, x=0, y=4]{Mengunggah Dokumen Sidang}
+            \umlusecase[name=ucTemplat, x=0, y=1]{Mengunduh Templat}
+            \umlusecase[name=ucBuatTemplat, x=0, y=-0.5]{Mengunggah Templat}
+            \umlusecase[name=ucNilai, x=0, y=-2]{Memberi Nilai \& Revisi}
+            \umlusecase[name=ucUnggahYud, x=0, y=-4]{Mengunggah Berkas Yudisium}
+            \umlusecase[name=ucVerif, x=0, y=-6]{Memverifikasi Berkas Yudisium}
+        \end{umlsystem}
+        
+        % Definisi Aktor (posisi disesuaikan)
+        \umlactor[x=-7, y=8]{Mahasiswa}
+        \umlactor[x=7, y=5]{Dosen}
+        \umlactor[x=7, y=-5]{Sekretariat}
+
+        % Hubungan Aktor dengan Use Case (dengan revisi)
+        \umlassoc{Mahasiswa}{ucAjuan}
+        \umlassoc{Mahasiswa}{ucUnggah}
+        \umlassoc{Mahasiswa}{ucTemplat}
+        \umlassoc{Mahasiswa}{ucUnggahYud}
+        
+        \umlassoc{Dosen}{ucSetuju}
+        \umlassoc{Dosen}{ucTemplat}
+        \umlassoc{Dosen}{ucNilai}
+
+        \umlassoc{Sekretariat}{ucTetapkan}
+        \umlassoc{Sekretariat}{ucBuatTemplat}
+        \umlassoc{Sekretariat}{ucVerif}
+    \end{tikzpicture}
+    }
+    %\captionsetup{font=small}
+    \caption{Diagram \textit{Use-Case} untuk fungsionalitas utama sistem D'Office.}
+    \label{fig:use-case}
+\end{figure}
+
+Dari diagram tersebut, dapat dilihat bahwa setiap aktor memiliki peran dan interaksi yang berbeda. 
+Mahasiswa mengawali proses dengan melakukan ``Pengajuan Judul \& Pembimbing'' kepada Dosen tujuan. 
+Dosen kemudian dapat ``Menyetujui/Menolak Prmintaan Bimbingan`` dari mahasiswa tersebut.  kemudian memiliki peran untuk ``Menyetujui/Menolak Bimbingan'' tersebut. 
+Lalu, Sekretariat berperan untuk secara formal ``Menetapkan Bimbingan'' yang telah disetujui Dosen ke dalam sistem. 
+Setelah proses pembimbingan berlangsung, Dosen juga memiliki peran evaluasi seperti ``Memberi Nilai \& Revisi''. 
+Sementara itu, Sekretariat juga memiliki peran administratif seperti ``Mengunggah Templat'' dan ``Memverifikasi Berkas Yudisium'' yang telah diunggah oleh Mahasiswa melalui tahapan ``Mengunggah Berkas Yudisium''. 
+Kasus penggunaan ``Mengunduh Templat'' dapat diakses oleh lebih dari satu aktor, menunjukkan adanya fungsionalitas bersama. 
+Diagram ini menjadi landasan untuk perancangan alur kerja dan antarmuka pada tahap selanjutnya.
+
+\section{Perancangan Sistem dan Alur Kerja}
+\label{sec:perancangan_sistem}
+Setelah kebutuhan fungsional sistem didefinisikan, tahap selanjutnya adalah merancang alur kerja dan interaksi sistem secara detail. 
+Perancangan pada bagian ini disajikan secara bertingkat, dimulai dari gambaran besar hingga ke detail teknis. 
+Pembahasan akan diawali dengan pemodelan logika sistem secara keseluruhan menggunakan Diagram Alir. 
+Selanjutnya, alur kerja akan dirinci dari sudut pandang interaksi antar aktor melalui Diagram Aktivitas. 
+Terakhir, interaksi spesifik antar komponen perangkat lunak untuk salah satu kasus penggunaan kunci akan dimodelkan menggunakan Diagram Urutan.
+
+\subsection{Perancangan Alur Sistem}
+\label{subsec:perancangan_alur}
+Perancangan sistem diawali dengan pemodelan alur logika utama dari awal hingga akhir. 
+Berbeda dengan Diagram Aktivitas yang berfokus pada interaksi aktor, Diagram Alir (\textit{Flowchart}) digunakan di sini untuk memvisualisasikan urutan langkah dan keputusan dari sudut pandang sistem secara prosedural. 
+Diagram Alir pada Gambar~\ref{fig:flowchart-sistem} memetakan keseluruhan proses yang ditangani oleh sistem D'Office, mulai dari pengajuan sidang hingga selesainya proses revisi.
+
+\begin{figure}[h!] % Menggunakan [H] dari paket float sesuai preferensi Anda
+    \centering
+    \resizebox{0.9\textwidth}{!}{
+\begin{tikzpicture}[
+    node distance=1cm and 1cm, 
+    every node/.style={font=\footnotesize},
+    % --- Definisi Style untuk Bentuk Flowchart ---
+    startstop/.style={rectangle, rounded corners, minimum width=3cm, minimum height=1cm, text centered, draw=black, fill=red!10},
+    io/.style={trapezium, trapezium left angle=70, trapezium right angle=110, minimum width=3cm, minimum height=1cm, text centered, draw=black, fill=blue!10},
+    process/.style={rectangle, minimum width=3cm, minimum height=1cm, text centered, draw=black, fill=green!10},
+    decision/.style={diamond, aspect=2, minimum width=2.5cm, minimum height=1cm, text centered, draw=black, fill=orange!10},
+    database/.style={cylinder, shape border rotate=90, aspect=0.4, draw, fill=yellow!20},
+    document/.style={rectangle, draw, fill=purple!10},
+    connector/.style={circle, draw, fill=gray!20, minimum size=0.8cm},
+    arrow/.style={thick,->,>=stealth}
+]
+    % --- Mendefinisikan Semua Node (Blok) ---
+    
+    % Kolom Kiri
+    \node (start)    [startstop]                                         {Mulai TA};
+    \node (io0)      [io, below=of start, text width=3cm]                {Mahasiswa Pengajuan Judul TA \& Bimbingan};
+    \node (dec00)     [decision, below=of io0]           {Dosen Setuju?};
+    \node (proc0)    [process, below=of dec00]                             {Sistem Menetapkan Bimbingan};
+    \node (db0)      [database, below=of proc0]            {Menyimpan Daftar Bimbingan};
+    \node (proc01)    [process, below=of db0]                             {Proses Bimbingan Berlangsung};
+    \node (dec0)     [decision, below=of proc01]           {Siap Sidang?};
+    \node (conn00)    [connector,below= of dec0]  {A};  
+    
+    \node (conn0)    [connector,right=5cm of start]                                         {A};
+    \node (io1)      [io, below=of conn0, text width=3cm]                {Menerima Draf TA \& Berkas Pengajuan Sidang};
+    \node (proc1)    [process, below=of io1]                             {Sistem Memvalidasi Berkas};
+    \node (dec1)     [decision, below=of proc1, yshift=-0.5cm]           {Berkas Valid?};
+    \node (db1)      [database, below=of dec1, yshift=-0.5cm]            {Menyimpan Berkas ke Basis Data};
+    \node (proc2)    [process, below=of db1, text width=4cm]                             {Mengirim Notifikasi ke Pembimbing};
+    \node (doc1)     [document, below=of proc2, text width=3.5cm]        {Menjadwalkan Sidang \& Mengirim Undangan via Email};
+    \node (conn1)    [connector, below=of doc1]                          {B};
+
+    % Kolom Kanan (dihubungkan oleh konektor)
+    \node (conn2)    [connector, right=5cm of conn0]                     {B};
+    \node (proc3)    [process, below=of conn2]                           {Sidang Dilaksanakan};
+    \node (io2)      [io, below=of proc3, text width=3cm]                {Menerima Input Nilai \& Catatan Revisi dari Penguji};
+    \node (db2)      [database, below=of io2]                            {Menyimpan Hasil Sidang};
+    \node (proc4)    [process, below=of db2, text width=4cm]                             {Sistem Menyediakan Revisi untuk Mahasiswa};
+    \node (io3)      [io, below=of proc4, text width=3cm]                {Menerima Unggahan Berkas Final Terevisi};
+    \node (dec2)     [decision, below=of io3]           {Berkas Valid?};
+    \node (stop)     [startstop, below=of dec2]                           {Selesai TA};
+
+    % --- Menghubungkan Semua Node dengan Panah ---
+    \draw [arrow] (start) -- (io0);
+    \draw [arrow] (io0) -- (dec00);
+    \draw [arrow] (dec00) -- node[pos=0.25,left]{Ya} (proc0);
+    \draw [arrow] (dec00.west) -- ++(-1,0) |- node[sloped, pos=0.25, above] {Tidak} (io0.west);
+    \draw [arrow] (proc0) -- (db0);
+    \draw [arrow] (db0) -- (proc01);
+    \draw [arrow] (proc01) -- (dec0);
+    \draw [arrow] (dec0) -- node[pos=0.25,left]{Ya} (conn00);
+    \draw [arrow] (dec0.west) -- ++(-1,0) |- node[sloped, pos=0.25, above] {Tidak} (proc01.west);
+    
+    \draw [arrow] (conn0) -- (io1);
+    \draw [arrow] (io1) -- (proc1);
+    \draw [arrow] (proc1) -- (dec1);
+    
+    % Jalur Keputusan 'Ya' dan 'Tidak'
+    \draw [arrow] (dec1) -- node[anchor=east, pos=0.25] {Ya} (db1);
+    \draw [arrow] (dec1.west) -- ++(-1,0) |- node[sloped, anchor=south, pos=0.25] {Tidak} (io1);
+    
+    \draw [arrow] (db1) -- (proc2);
+    \draw [arrow] (proc2) -- (doc1);
+    \draw [arrow] (doc1) -- (conn1);
+
+    \draw [arrow] (conn2) -- (proc3);
+    \draw [arrow] (proc3) -- (io2);
+    \draw [arrow] (io2) -- (db2);
+    \draw [arrow] (db2) -- (proc4);
+    \draw [arrow] (proc4) -- (io3);
+    \draw [arrow] (io3) -- (dec2);
+    % Jalur Keputusan 'Ya' dan 'Tidak'
+    \draw [arrow] (dec2) -- node[anchor=east, pos=0.25] {Ya} (stop);
+    \draw [arrow] (dec2.west) -- ++(-1,0) |- node[sloped, anchor=south, pos=0.25] {Tidak} (io3);
+\end{tikzpicture}
+}
+%\captionsetup{font=small}
+    \caption{Diagram Alir (\textit{Flowchart}) logika utama sistem D'Office.}
+    \label{fig:flowchart-sistem}
+\end{figure}
+
+Diagram alir pada Gambar~\ref{fig:flowchart-sistem} memvisualisasikan urutan logis dari proses utama yang dikelola oleh sistem D'Office. 
+Proses diawali pengajuan judul TA dan bimbingan yang dilakukan oleh mahasiswa. 
+Dosen akan menentukan apakah mereka menerima pengajuan tersebut atau tidak, sebelum ditetapkan oleh sekretariat. 
+Setelah daftar bimbingan ditetapkan dan disimpan dalam sistem, proses pembimbingan berlangsung antara dosen dengan mahasiswa tersebut. 
+Begitu dosen telah menyetujui mahasiswa bimbingan untuk maju sidang, maka mahasiswa mengajukan berkas sidang yang kemudian divalidasi oleh sistem. 
+Jika tidak valid, proses akan kembali meminta masukan dari mahasiswa. 
+Jika valid, sistem akan menyimpan berkas, memfasilitasi penjadwalan, dan mengirimkan notifikasi. 
+Setelah sidang dilaksanakan, sistem kembali berperan dalam menerima masukan revisi dari dewan penguji, menyediakannya untuk mahasiswa, hingga akhirnya menerima berkas final yang telah direvisi untuk menyelesaikan siklus.
+
+\subsection{Perancangan Proses Bisnis}
+\label{subsec:perancangan_proses}
+Untuk memberikan gambaran detail mengenai alur kerja sistem, proses utama dipecah menjadi tiga fase logis yang masing-masing diilustrasikan dengan Diagram Aktivitas. 
+Fase pertama mencakup proses dari pengajuan judul hingga persetujuan bimbingan. 
+Fase kedua fokus pada alur pra-sidang, dan fase ketiga menjelaskan alur pasca-sidang.
+
+\subsubsection{Diagram Aktivitas Pengajuan dan Proses Bimbingan}
+Diagram pada Gambar~\ref{fig:activity-bimbingan} menunjukkan alur kerja awal, mulai dari mahasiswa mengajukan judul hingga dosen pembimbing memberikan persetujuan untuk maju ke tahap sidang. 
+Fase ini melibatkan interaksi antara Mahasiswa, Dosen Pembimbing yang dituju, dan Sekretariat Departemen, yang difasilitasi oleh sistem D'Office.
+
+\begin{figure}[H]
+    \centering
+    \resizebox{\textwidth}{!}{
+    \begin{tikzpicture}[
+        node distance=0.5cm and 0.5cm,
+        actor/.style={rectangle, draw, font=\bfseries, minimum width=3cm},
+        startend/.style={circle, draw, fill=black, inner sep=2pt},
+        activity/.style={rectangle, draw, rounded corners, fill=blue!10, text width=8em, text centered, minimum height=3em},
+        decision/.style={diamond, draw, aspect=1.5, fill=orange!20, inner sep=1pt, text centered},
+        line/.style={draw, -Latex, thick}
+    ]
+        % Swimlanes
+        \node[actor] (mhs) {Mahasiswa};
+        \node[actor, right=2cm of mhs] (sistem) {Sistem D'Office};
+        \node[actor, right=2cm of sistem] (dosen) {Dosen Pembimbing};
+        \node[actor, left=2cm of mhs] (tendik) {Sekretariat};
+
+        % Garis pemisah swimlane
+        \draw[dashed] ($(tendik.east)!0.5!(mhs.west)$) -- +(0,-9);
+        \draw[dashed] ($(mhs.east)!0.5!(sistem.west)$) -- +(0,-9);
+        \draw[dashed] ($(sistem.east)!0.5!(dosen.west)$) -- +(0,-9);
+
+        % Alur Proses
+        \node[startend, below=1cm of mhs] (start) {};
+        \node[activity, below=of start] (ajuJudul) {Mengajukan Judul \& Calon Pembimbing};
+        \node[decision, yshift=-2cm] (setujuDosen) at (dosen |- ajuJudul) {Setujui Bimbingan?};
+        \node[activity,yshift=-3cm] (verifTendik) at (tendik |- setujuDosen) {Menetapkan Pembimbing Secara Formal};
+        \node[activity] (updateStatus) at (sistem |- verifTendik) {Memperbarui Status Pembimbingan};
+        \node[activity, yshift=-2.5cm] (bimbingan) at (mhs |- updateStatus) {Melakukan Bimbingan \& Mengisi Log};
+        \node[decision,yshift=-2cm] (accSidang) at (dosen |- bimbingan) {Naskah Siap Sidang?};
+        \node[startend, below=of accSidang] (end) {};
+
+        % Panah
+        \draw[line] (start) -- (ajuJudul);
+        \draw[line] (ajuJudul.east) -| (setujuDosen.north);
+        \draw[line] (setujuDosen.west) -- ++(-1cm,0) node[midway, below] {Tidak} -| (ajuJudul.south);
+        \draw[line] (setujuDosen.south) -- ++ (0,-0.3cm) node[right] {Ya} -| (verifTendik.north);
+        \draw[line] (verifTendik.east) -- (updateStatus.west);
+        \draw[line] (updateStatus.south) -- ++ (0,-0.4cm) -| (bimbingan.north);
+        \draw[line] (bimbingan.east) -| (accSidang.north);
+        \draw[line] (accSidang) -- node[right] {Ya} (end);
+        \draw[line] (accSidang.west) -- ++ (-2cm,0) node[midway, below] {Tidak, Revisi} -| (bimbingan.south) ;
+        
+    \end{tikzpicture}
+    }
+    %\captionsetup{font=small}
+    \caption{Diagram Aktivitas untuk proses pengajuan dan bimbingan.}
+    \label{fig:activity-bimbingan}
+\end{figure}
+
+Alur ini diawali oleh Mahasiswa yang mengajukan judul dan memilih calon pembimbing di D'Office. 
+Sistem kemudian meneruskan pengajuan ini kepada Dosen yang dituju untuk meminta persetujuan. 
+Jika dosen menolak, mahasiswa harus mengajukan ulang. 
+Jika disetujui, alur berlanjut ke Sekretariat untuk penetapan formal. 
+Setelah pembimbingan ditetapkan, siklus bimbingan iteratif antara Mahasiswa dan Dosen dimulai, di mana pengisian log bimbingan menjadi bagian dari proses. 
+Siklus ini berakhir ketika Dosen Pembimbing memberikan persetujuan bahwa naskah siap untuk diajukan ke sidang.
+
+\subsubsection{Diagram Aktivitas Pra-Sidang}
+Gambar~\ref{fig:activity-pra-sidang} menunjukkan alur kerja yang difasilitasi oleh D'Office mulai dari pengunggahan draf oleh mahasiswa hingga penjadwalan sidang oleh dosen pembimbing.
+
+\begin{figure}[H]
+    \centering
+    \resizebox{\textwidth}{!}{
+    \begin{tikzpicture}[
+        node distance=0.5cm and 0.5cm,
+        actor/.style={rectangle, draw, font=\bfseries, minimum width=3cm},
+        startend/.style={circle, draw, fill=black, inner sep=2pt},
+        activity/.style={rectangle, draw, rounded corners, fill=blue!10, text width=8em, text centered, minimum height=3em},
+        decision/.style={diamond, draw, aspect=1.5, fill=orange!20, inner sep=1pt, text centered},
+        line/.style={draw, -Latex, thick}
+    ]
+        % Swimlanes
+        \node[actor] (mhs) {Mahasiswa};
+        \node[actor, right=3.0cm of mhs] (sistem) {Sistem D'Office};
+        \node[actor, right=3.0cm of sistem] (dosen) {Dosen Pembimbing};
+        
+        % Garis pemisah swimlane
+        \draw[dashed] ($(mhs.east)!0.5!(sistem.west)$) -- +(0,-10);
+        \draw[dashed] ($(sistem.east)!0.5!(dosen.west)$) -- +(0,-10);
+
+        % Alur Proses
+        \node[startend, below=1cm of mhs] (start) {};
+        \node[activity, below=of start] (upload) {Mengunggah Draf \& Prasyarat};
+        \node[decision, below=1cm of upload -| sistem] (validasi) {Berkas Lengkap?};
+        \node[activity, below=of validasi] (notif) {Memberi Notifikasi ke Dosen};
+        \node[activity, below=6.3cm of dosen] (usul) {Mengajukan Jadwal \& Penguji};
+        \node[activity, below=1cm of usul -| sistem] (kirim) {Membuat \& Mengirim Undangan Sidang};
+        \node[activity, left=of validasi -| mhs] (revisiUpload) {Memperbaiki Unggahan};
+        \node[startend, below=of kirim] (end) {};
+        \node[coordinate, below=0.1cm of end] (to_next_diagram) {}; % Titik akhir menuju diagram selanjutnya
+
+        % Panah
+        \draw[line] (start) -- (upload);
+        \draw[line] (upload.east) -| (validasi.north);
+        \draw[line] (validasi) -- node[right, pos=0.2] {Ya} (notif);
+        \draw[line] (notif.east) -- (usul.west);
+        \draw[line] (usul.south) |- (kirim.east);
+        \draw[line] (kirim) -- node[right] {Sidang Dilaksanakan} (end);
+        \draw[line] (validasi.west) -- node[above] {Tidak} (revisiUpload.east);
+        \draw[line] (revisiUpload.north) |- (upload.west);
+    \end{tikzpicture}
+    }
+    %\captionsetup{font=small}
+    \caption{Diagram Aktivitas untuk proses pra-sidang.}
+    \label{fig:activity-pra-sidang}
+\end{figure}
+
+Alur pra-sidang dimulai oleh Mahasiswa yang mengunggah berkas. 
+Sistem D'Office kemudian memvalidasi kelengkapan berkas. 
+Jika tidak lengkap, alur dikembalikan ke mahasiswa. 
+Jika lengkap, sistem memberi notifikasi kepada Dosen Pembimbing, yang kemudian dapat menjadwalkan sidang dan mengusulkan penguji melalui sistem.
+
+\subsubsection{Diagram Aktivitas Pasca-Sidang}
+Setelah sidang dilaksanakan, proses revisi dan pengumpulan akhir dimulai. 
+Alur kerja ini, yang melibatkan aktivitas paralel dari Dosen Pembimbing dan Dosen Penguji, disajikan pada Gambar~\ref{fig:activity-pasca-sidang}.
+
+\begin{figure}[h!]
+    \centering
+    \resizebox{\textwidth}{!}{
+    \begin{tikzpicture}[
+        node distance=0.5cm and 0.5cm,
+        actor/.style={rectangle, draw, font=\bfseries, minimum width=3cm},
+        startend/.style={circle, draw, fill=black, inner sep=2pt},
+        activity/.style={rectangle, draw, rounded corners, fill=blue!10, text width=8em, text centered, minimum height=3em},
+        decision/.style={diamond, draw, aspect=1.5, fill=orange!20, inner sep=1pt, text centered},
+        line/.style={draw, -Latex, thick},
+        fork_v/.style={rectangle, draw, fill=black, minimum width=0.15cm, minimum height=4cm},
+        join_h/.style={rectangle, draw, fill=black, minimum width=6cm, minimum height=0.15cm}, % Join Horizontal
+    ]
+        % Swimlanes
+        \node[actor] (mhs) {Mahasiswa};
+        \node[actor, right=2cm of mhs] (sistem) {Sistem D'Office};
+        \node[actor, right=2cm of sistem] (pembimbing) {Dosen Pembimbing};
+        \node[actor, right=2cm of pembimbing] (penguji) {Dosen Penguji};
+        
+        % Garis pemisah swimlane
+        \draw[dashed] ($(mhs.east)!0.5!(sistem.west)$) -- +(0,-16);
+        \draw[dashed] ($(sistem.east)!0.5!(pembimbing.west)$) -- +(0,-16);
+        \draw[dashed] ($(pembimbing.east)!0.5!(penguji.west)$) -- +(0,-16);
+
+        % Alur Proses
+        \node[startend, below=1cm of mhs] (start) {};
+        \node[activity, below=of start] (sidang) {Pelaksanaan Sidang};
+        
+        % Fork Node (Vertikal)
+        \node[fork_v, below= of sistem] (fork) {};
+        
+        \node[activity, below=1.3cm of sidang -| pembimbing] (isiRevisiPembimbing) {Mengisi Nilai \& Revisi};
+        \node[activity, below=1.3cm of sidang -| penguji] (isiRevisiPenguji) {Mengisi Nilai \& Revisi};
+        
+        % Join Node (Vertikal)
+        \node[join_h, below=3.5cm of fork] (join) {};
+        
+        \node[activity, below=1cm of join] (sediaRevisi) {Menyediakan Catatan Revisi};
+        \node[activity, below=6.15cm of sidang] (kerjakanRevisi) {Mengerjakan Revisi \& Meminta TTD};
+        \node[activity, below=of kerjakanRevisi] (uploadFinal) {Mengunggah Buku Final};
+        \node[decision,yshift=-1.8cm] (validasi) at (sistem |- uploadFinal) {Berkas Lengkap?};
+        \node[startend, below=of validasi] (end) {};
+        
+        % Panah (Logika Baru yang Lebih Benar)
+        \draw[line] (start) -- (sidang);
+        % 1. Satu panah dari Sidang ke Fork
+        \draw[line] (sidang.east) |- (fork.west);
+        
+        % 2. Dua panah KELUAR dari Fork di titik berbeda (lebih ke bawah)
+        \draw[line] ($(fork.north east)!0.65!(fork.south east)$) -|(isiRevisiPembimbing.north);
+        \draw[line] ($(fork.north east)!0.35!(fork.south east)$) -| (isiRevisiPenguji.north);
+
+        % 3. Dua panah MASUK ke Join dengan dua tekukan
+        \draw[line] (isiRevisiPembimbing.south) -- ++(0,-0.5cm) -| ($(join.north west)!0.35!(join.north east)$);
+        \draw[line] (isiRevisiPenguji.south) -- ++(0,-1.5cm) -| ($(join.north west)!0.65!(join.north east)$);
+        
+        % 4. Satu panah KELUAR dari Join
+        \draw[line] (join.south) -- (sediaRevisi.north);
+        
+        \draw[line] (sediaRevisi.west) -- (kerjakanRevisi.east);
+        \draw[line] (kerjakanRevisi) -- (uploadFinal);
+        \draw[line] (uploadFinal.east) -| (validasi.north);
+        \draw[line] (validasi.south) -- node[pos=0.25,right]{Ya}(end);
+        \draw[line] (validasi.west) -- ++(-1cm,0) node[pos=0.25,below] {Tidak}  -|(uploadFinal.south);
+    \end{tikzpicture}
+    }
+    %\captionsetup{font=small}
+    \caption{Diagram Aktivitas untuk proses pasca-sidang dengan Fork/Join Node yang benar.}
+    \label{fig:activity-pasca-sidang}
+\end{figure}
+
+Alur pasca-sidang dimulai setelah sidang selesai. Baik Dosen Pembimbing maupun Dosen Penguji memasukkan nilai dan catatan revisi ke D'Office. Sistem kemudian menyediakan catatan tersebut kepada Mahasiswa, yang selanjutnya mengerjakan revisi dan meminta persetujuan (tanda tangan). Setelah semua disetujui, mahasiswa mengunggah versi final dari tugas akhirnya ke sistem.
+
+
+% Kode ini adalah kelanjutan dari sub-bab sebelumnya.
+% Pastikan Anda sudah memiliki `tikz-uml.sty` di direktori proyek Anda.
+
+\subsection{Perancangan Interaksi}
+\label{subsec:perancangan_interaksi}
+Setelah alur proses bisnis utama divisualisasikan melalui Diagram Aktivitas, langkah berikutnya adalah memodelkan bagaimana interaksi internal sistem terjadi untuk mewujudkan proses tersebut. Untuk tujuan ini digunakan Diagram Sekuens UML, yang menggambarkan komunikasi dinamis antar objek atau komponen perangkat lunak seiring waktu.
+
+Dalam konteks aplikasi D’Office, struktur internal sistem dirancang mengikuti pola arsitektur \ac{MVC}. Pola ini memungkinkan pemisahan tanggung jawab yang jelas antara pengelolaan data (\textit{Model}), penyajian antarmuka pengguna (\textit{View}), dan pengendali alur logika (\textit{Controller}). Berdasarkan arsitektur ini, perilaku dinamis sistem saat melayani pendaftaran sidang dapat divisualisasikan melalui Diagram Sekuens. Gambar~\ref{fig:sequence-diagram} memperlihatkan contoh Diagram Sekuens yang digunakan untuk melihat dinamika dari \textit{Use Case} ``Mengunggah Dokumen Sidang''.
+
+\begin{figure}[H]
+    \centering
+    \resizebox{\textwidth}{!}{
+    \begin{tikzpicture}[
+        % ... (definisi style lifeline, object, msg, ret_msg tetap sama) ...
+        y=-1.5cm, x=3.5cm,
+        lifeline/.style={draw, thick},
+        object/.style={rectangle, draw, rounded corners, fill=blue!10, minimum width=2.0cm, minimum height=0.8cm, text centered},
+        msg/.style={draw, -{Stealth[length=3mm]}},
+        ret_msg/.style={draw, dashed, -{Stealth[length=3mm]}}
+    ]
+        % 1. Gambar Objek dan Lifeline (Model diganti menjadi :Sidang)
+        \node[object] (mhs) at (0,0) {\footnotesize Mhs: Mahasiswa};
+        \node[object] (web) at (1,0) {\footnotesize Web: Browser};
+        \node[object] (ctrl) at (2,0) {\footnotesize Controller: SidangController};
+        \node[object] (model) at (3,0) {\footnotesize Model: Sidang};
+        \node[object] (db) at (4,0) {\footnotesize DB: Database};
+
+        \foreach \obj in {mhs, web, ctrl, model, db}
+        {
+            \draw[lifeline] (\obj.south) -- (\obj.south |- 0,9);
+        }
+
+        % 2. Gambar Pesan (disesuaikan dengan metode di Class Diagram)
+        \draw[msg] (0,1) -- (1,1) node[midway, above, font=\small] {1: \texttt{klikSubmit}()};
+        \draw[msg] (1,2) -- (1.9,2) node[midway, above, font=\small] {2: \texttt{store(request)}};
+        % Validasi oleh SidangStoreRequest terjadi secara implisit di sini
+        
+        \draw[msg] (2,3.5) -- (2.9,3.5) node[pos=0.7, above, font=\footnotesize] {3: \texttt{new Sidang(data)}};
+        \draw[msg] (2,4.5) -- (2.9,4.5) node[midway, above, font=\small] {4: \texttt{save()}};
+        \draw[msg] (3,5.5) -- (3.9,5.5) node[pos=0.85, above, font=\footnotesize] {5: \texttt{INSERT INTO sidangs ...}};
+        \draw[ret_msg] (4,6) -- (3.1,6);
+        \draw[ret_msg] (3,6.5) -- (2.1,6.5);
+        \draw[ret_msg] (2,7.5) -- (1,7.5) node[midway, above, font=\small] {6: \texttt{redirect('sukses')}};
+        \draw[msg] (1,8.5) -- (0,8.5) node[midway, above, font=\small] {7: \texttt{tampilkanSukses()}};
+
+        % 3. Gambar Balok Aktivasi
+        \filldraw[fill=gray!20] (2-0.1, 2) rectangle (2+0.1, 7.5);
+        \filldraw[fill=gray!20] (3-0.1, 3.5) rectangle (3+0.1, 6.5);
+        \filldraw[fill=gray!20] (4-0.1, 5.5) rectangle (4+0.1, 6);
+    \end{tikzpicture}
+    }
+    %\captionsetup{font=small}
+    \caption{Diagram Urutan yang disinkronkan dengan Diagram Kelas.}
+    \label{fig:sequence-diagram}
+\end{figure}
+
+Alur interaksi ini dapat dijelaskan sebagai berikut: (1) Proses diawali oleh Mahasiswa yang menekan \texttt{klikSubmit}. 
+(2) Peramban (\textit{browser}) mengirimkan data ke metode \texttt{store(request)} pada SidangController. 
+(3-4) Jika berkas valid, \textit{Controller} membuat instansiasi objek \texttt{Sidang} baru dan memanggil metode \texttt{save()} padanya. 
+(5) Metode \texttt{save()} kemudian menerjemahkan aksi ini menjadi kueri \texttt{INSERT} ke Basis Data (\textit{Database}). 
+(6-7) Setelah berhasil, \textit{Controller} mengirimkan respons kembali ke peramban (\textit{Browser}) untuk menampilkan halaman sukses kepada Mahasiswa. 
+
+\section{Implementasi Sistem D'Office}
+\label{sec:implementasi}
+Tahap implementasi adalah proses penerjemahan semua hasil analisis dan perancangan yang telah dibahas sebelumnya ke dalam wujud produk fungsional. 
+Bagian ini akan menguraikan lingkungan pengembangan yang digunakan, detail implementasi dari salah satu fitur kunci sistem D'Office, serta proses pengembangan templat penulisan. 
+Selain itu, arsitektur sistem dan perangkat lunak yang mendasari implementasi juga dijabarkan untuk memberikan gambaran struktur internal aplikasi.
+
+\subsection{Lingkungan Pengembangan}
+\label{subsec:lingkungan_pengembangan}
+Untuk memastikan proses pengembangan berjalan dengan lancar dan konsisten, digunakan serangkaian perangkat keras dan perangkat lunak yang terstandarisasi. 
+Komponen-komponen utama dari lingkungan pengembangan diilustrasikan pada Gambar~\ref{fig:lingkungan-dev}, dengan spesifikasi detailnya dirangkum pada Tabel~\ref{tab:spesifikasi-dev}.
+
+
+\begin{figure}[h!]
+    \centering
+    \resizebox{\textwidth}{!}{
+    \begin{tikzpicture}[
+        node distance=1cm and 1.5cm,
+        auto,
+        main/.style={rectangle, draw, fill=none, draw=none, text width=5em, text centered, minimum height=1.7cm},
+        tool/.style={rectangle, draw, rounded corners, fill=gray!10, text centered}
+    ]
+    \begin{scope}[scale=0.3, transform shape]
+        \pic {my pc};
+        \node (pc1) at (0,0) {}; % Node jangkar yang bisa dirujuk
+    \end{scope}
+
+    \node[main] (env) {};
+    \node[below=0.4cm of pc1.north, text width=9em, text centered] {\textbf{Lingkungan Pengembangan}};
+    
+    \node[tool, above left=of env] (php) {PHP 8.1};
+    \node[tool, above right=of env] (laravel) {Laravel 9.x};
+    \node[tool, right=of laravel] (composer) {Composer};
+    \node[tool, below right=of env] (git) {Git \& GitHub};
+    \node[tool, below left=of env] (vscode) {VS Code};
+    \node[tool, left=of php] (laragon) {Laragon};
+    \node[tool, above=of env] (mysql) {MySQL};
+    \draw[-o] (env.north west) -- (php.south);
+    \draw[-o] (env.north east) -- (laravel.south);
+    \draw[-o] (laravel.east) -- (composer.west);
+    \draw[-o] (env.south west) -- (vscode.north);
+    \draw[-o] (env.south east) -- (git.north);
+    \draw[-o] (php.west) -- (laragon.east);
+    \draw[-o] (env.north) -- (mysql.south);
+\end{tikzpicture}
+}
+%\captionsetup{font=small}
+\caption{Komponen utama dalam lingkungan pengembangan proyek.}
+\label{fig:lingkungan-dev}
+\end{figure}
+
+
+\begin{table}[h!]
+    \centering
+    \captionsetup{justification=justified,singlelinecheck=false}
+    \caption{Spesifikasi perangkat keras dan perangkat lunak.}
+    \label{tab:spesifikasi-dev}
+    \begin{tabularx}{\linewidth}{|l|l|X|}
+        \hline
+        \textbf{Kategori} & \textbf{Komponen} & \textbf{Spesifikasi} \\
+        \hline
+        \multirow{4}{*}{\textbf{Perangkat Keras}} & Prosesor & Intel Core i5 atau setara \cite{intel_i5} \\
+        \cline{2-3}
+        & RAM & 8 GB \cite{ram_generic} \\
+        \cline{2-3}
+        & Penyimpanan & 256 GB SSD \cite{ssd_generic} \\
+        \cline{2-3}
+        & Sistem Operasi & Windows 11 \cite{windows11} \\
+        \hline
+        \multirow{8}{*}{\textbf{Perangkat Lunak}} & Server Lokal & Laragon (Apache, MySQL, PHP) \cite{laragon} \\
+        \cline{2-3}
+        & Bahasa & PHP versi 8.1 \cite{php8} \\
+        \cline{2-3}
+        & Kerangka Kerja & Laravel versi 9.x \cite{laravel9} \\
+        \cline{2-3}
+        & Dependency Manager & Composer \cite{composer} \\
+        \cline{2-3}
+        & Basis Data & MySQL \cite{mysql} \\
+        \cline{2-3}
+        & Editor Kode & Visual Studio Code \cite{vscode} \\
+        \cline{2-3}
+        & Kontrol Versi & Git \& GitHub \cite{git} \\
+        \hline
+    \end{tabularx}
+\end{table}
+
+Justifikasi untuk pemilihan perangkat keras yang tercantum pada Tabel~\ref{tab:spesifikasi-dev} adalah karena spesifikasi tersebut merupakan standar industri untuk pengembangan aplikasi web modern. 
+Prosesor Intel Core i5, RAM 8 GB, dan penyimpanan berbasis \ac{SSD} menjamin kinerja yang memadai untuk menjalankan \textit{server} lokal, editor kode, dan beberapa aplikasi pendukung secara bersamaan tanpa mengalami kendala performa yang signifikan.
+
+Adapun justifikasi untuk pemilihan tumpukan teknologi (\textit{technology stack}) perangkat lunak didasarkan pada prinsip sumber terbuka (\textit{open-source}), kematangan ekosistem, dan kemudahan pengembangan. 
+PHP dipilih sebagai bahasa pemrograman sisi server karena sifatnya yang matang dan komunitas pengembang yang besar. 
+Untuk mempercepat proses, digunakan kerangka kerja Laravel yang menerapkan pola arsitektur MVC secara elegan dan memiliki fitur bawaan yang sangat kaya. 
+Untuk memudahkan manajemen dependensi, digunakan Composer sebagai pengelola pustaka yang telah menjadi standar de facto dalam ekosistem PHP modern. 
+Laragon dipilih sebagai server lokal karena menyatukan Apache, PHP, dan MySQL dalam satu paket ringan yang mudah dikonfigurasi. 
+MySQL dipilih sebagai sistem manajemen basis data karena merupakan standar industri yang andal dan terintegrasi dengan baik dalam ekosistem PHP. 
+Terakhir, Visual Studio Code dan Git digunakan sebagai editor kode dan sistem kontrol versi karena keduanya merupakan standar industri yang ringan, fleksibel, dan efisien.
+
+Dengan perangkat keras dan perangkat lunak yang telah dijabarkan, proses implementasi dapat dilakukan secara konsisten sesuai standar industri. 
+Tahap berikutnya adalah menjelaskan bagaimana komponen tersebut diorganisasikan ke dalam pola arsitektur perangkat lunak. 
+Untuk itu, sistem D'Office dirancang dengan mengikuti prinsip \textit{three-tier architecture} yang membagi tanggung jawab ke dalam lapisan presentasi, aplikasi, dan data. 
+Pola ini akan dijelaskan lebih rinci pada bagian berikut.
+
+\subsection{Arsitektur Tiga Lapis}
+\label{subsec:arsitektur_tiga_lapis}
+Arsitektur sistem D'Office dirancang dengan mengacu pada pola \textit{three-tier architecture}, yang telah dibahas secara konseptual pada Bab~\ref{cha:studiliteratur}. 
+Implementasi pola ini menghasilkan tiga lapisan utama yang memisahkan tanggung jawab sistem, yaitu \textit{Client Tier}, \textit{Application Tier}, dan \textit{Data Tier}. 
+Diagram implementasi pada Gambar~\ref{fig:deployment-diagram} memvisualisasikan bagaimana komponen perangkat lunak dipetakan ke dalam infrastruktur perangkat keras.
+
+\begin{figure}[h!]
+    \centering
+    \resizebox{\textwidth}{!}{
+    \begin{tikzpicture}[
+        node distance=2cm and 4.5cm,
+        auto,
+        server/.style={
+            rectangle, draw, thick, fill=gray!20,
+            minimum width=3.5cm, minimum height=2.5cm,
+            align=center,
+            path picture={ 
+                \coordinate (L1) at (path picture bounding box.north west)++(0.2,-0.7);
+                \coordinate (R1) at (path picture bounding box.north east)++(-0.2,-0.7);
+                \draw[thin] (L1) -- (R1);       
+                \coordinate (L2) at (path picture bounding box.north west)++(0.2,-1.4);
+                \coordinate (R2) at (path picture bounding box.north east)++(-0.2,-1.4);
+                \draw[thin] (L2) -- (R2);
+                \fill[green!60!black] (path picture bounding box.south west)++(0.3,0.3) circle (2pt);
+            }
+        },
+        client/.style={circle, draw, thick, fill=blue!10, minimum size=1.5cm},
+        artifact/.style={
+            rectangle, draw, fill=blue!10,
+            text width=3cm, text centered, font=\small
+        },
+        line/.style={draw, -{Stealth[length=3mm]}, thick}
+    ]
+        % Node perangkat keras
+        \node[server] (webserver) {\textbf{Application Server} \\ \texttt{srv-app-01.ee.ui.ac.id}};
+        \node[server, right=of webserver] (dbserver) {\textbf{Database Server} \\ \texttt{srv-db-01.ee.ui.ac.id}};
+        \node[client] (client) at ($(webserver.west)-(4.5,0)$) {Pengguna};
+        \node[below=2.5cm of client.north] (clientlabel){\textit{Client Tier}};
+        
+        % Artefak perangkat lunak
+        \node[artifact, below=0.1cm of webserver.north] (app) {Aplikasi Web D'Office};
+        \node at (app |- clientlabel) {\textit{Application Tier}};
+        \node[artifact, below=0.1cm of dbserver.north] (db) {MySQL Database};
+        \node at (db |- clientlabel) {\textit{Data Tier}};
+
+        % Hubungan/koneksi
+        \draw[line] (client) -- (webserver.west) node[midway, above, font=\small] {HTTP/HTTPS};
+        \draw[line, <->] (webserver.east) -- (dbserver.west) node[midway, above, font=\small] {Koneksi DB};
+        
+    \end{tikzpicture}
+    }
+    %\captionsetup{font=small}
+    \caption{Diagram Implementasi (\textit{Deployment Diagram}) arsitektur sistem D'Office.}
+    \label{fig:deployment-diagram}
+\end{figure}
+
+Secara rinci, Lapis pertama adalah \textit{Client Tier}, yang berupa peramban web di sisi pengguna. 
+Pada lapisan ini, pengguna berinteraksi dengan sistem melalui antarmuka aplikasi berbasis web. 
+Lapis kedua adalah \textit{Application Tier}, yang direalisasikan dengan sebuah \textit{Application Server} untuk menjalankan logika bisnis D'Office. 
+Semua aturan sistem, proses pengolahan data, serta mekanisme otorisasi dijalankan pada lapisan ini. 
+Lapis ketiga adalah \textit{Data Tier}, yang berupa \textit{Database Server} terpisah untuk menyimpan data secara persisten menggunakan MySQL. 
+Pemisahan antara server aplikasi dan server basis data diterapkan untuk meningkatkan keamanan, kinerja, serta skalabilitas, karena beban kerja keduanya ditangani oleh mesin yang berbeda. 
+
+Dengan desain tiga lapis tersebut, fokus penelitian selanjutnya adalah lapisan aplikasi (\textit{Application Tier}). Untuk menjelaskan bagaimana perangkat lunak di dalam lapisan ini diorganisasikan, pembahasan dilanjutkan pada subseksi~\ref{subsec:arsitektur_perangkat_lunak}, yang mencakup pola \ac{MVC}, perancangan basis data, serta pemodelan diagram UML yang relevan.
+
+\subsection{Arsitektur Perangkat Lunak}
+\label{subsec:arsitektur_perangkat_lunak}
+
+Arsitektur perangkat lunak D'Office difokuskan pada \textit{Application Tier} dari pola tiga lapis (\textit{three-tier architecture}) yang telah diuraikan pada Subseksi~\ref{subsec:arsitektur_tiga_lapis}. 
+Jika arsitektur tiga lapis sebelumnya menggambarkan pemisahan komponen pada tingkat sistem (antara klien, server aplikasi, dan server basis data), maka pembahasan di bagian ini menyoroti bagaimana \textit{Application Tier} direalisasikan dalam bentuk perangkat lunak. 
+
+Pada lapisan aplikasi inilah perangkat lunak dirancang dengan pemisahan tanggung jawab yang jelas, sehingga sistem lebih mudah dipelihara, diperluas, dan diuji. 
+Secara konseptual, pembahasan dimulai dari pola \ac{MVC} yang menjadi kerangka organisasi utama logika aplikasi. 
+Selanjutnya, diturunkan ke aspek perancangan basis data yang mendukung komponen \textit{Model} agar mampu beroperasi konsisten dengan kebutuhan sistem. 
+Terakhir, desain ini diformalkan melalui pemodelan dengan notasi UML, baik berupa \textit{Sequence Diagram} untuk interaksi dinamis maupun \textit{Class Diagram} untuk struktur statis perangkat lunak. 
+
+Pada arsitektur perangkat lunak D'Office, kerangka utama yang digunakan untuk mengatur logika aplikasi adalah pola \textit{Model-View-Controller} (MVC). Subsubseksi berikut menjelaskan implementasi pola MVC pada lapisan aplikasi, khususnya dengan memanfaatkan kerangka kerja Laravel.
+
+\subsubsection{Model-View-Controller (MVC) pada Lapisan Aplikasi}
+Pola MVC diimplementasikan menggunakan kerangka kerja Laravel yang secara sistematis mendukung pemisahan tanggung jawab dalam aplikasi web.
+Seperti diperlihatkan pada Gambar~\ref{fig:laravel-mvc},
+\texttt{Model} di Laravel diwujudkan melalui Eloquent ORM, yang memungkinkan representasi tabel basis data dalam bentuk kelas objek.
+\texttt{View} diimplementasikan melalui Blade Templating Engine, yang memisahkan antarmuka pengguna dari logika aplikasi.
+\texttt{Controller} berfungsi mengelola alur kerja aplikasi, termasuk memanggil \texttt{Model} dan \texttt{View} yang sesuai.
+
+\begin{figure}[H]
+    \centering
+    \resizebox{\textwidth}{!}{
+    \begin{tikzpicture}[
+        component/.style={rectangle, draw, thick, fill=blue!10, text centered, minimum height=3em, minimum width=2cm},
+        arrow/.style={-Latex, thick}
+    ]
+        % Nodes
+        \node[component] (controller) {\texttt{Controller}};
+        \node[component, text width=3.5cm, above left=2cm and 0.5cm of controller] (view) {\texttt{View}\\(\textit{Blade Templates})};
+        \node[component, text width=3cm, above right=2cm and 0.5cm of controller] (model) {\texttt{Model}\\(\textit{Eloquent ORM})};
+        
+        % User and DB
+        \node[component, text width=2cm, left= of view] (user) {Pengguna (\textit{Browser})};
+        \node[component, text width=2cm, right= of model] (db) {Basis Data};
+        
+        % Connections
+        \draw[arrow] (view.west) -- (user.east) node[midway, above] {\scriptsize Response};
+        \draw[arrow] (user.south) |- (controller.west) node[midway, below] {\scriptsize Request};
+        
+        \draw[arrow] (controller.north west) -- (view.south east) node[sloped,midway, below]{\scriptsize Render};
+        \draw[arrow] ($(controller.north east)+(0.1cm,0)$) --  ($(model.south west)+(0.1cm,0)$);
+        \draw[arrow] ($(model.south west)+(-0.1cm,0)$) --  ($(controller.north east)+(-0.1cm,0)$);
+        \draw[arrow] ($(model.east)+(0,0.2cm)$) -- ($(db.west)+(0,0.2cm)$);
+        \draw[arrow] ($(db.west)-(0,0.2cm)$) -- ($(model.east)-(0,0.2cm)$);
+    \end{tikzpicture}
+    }
+    %\captionsetup{font=small}
+    \caption{Ilustrasi penerapan pola MVC pada Laravel.}
+    \label{fig:laravel-mvc}
+\end{figure}
+
+Selain memisahkan komponen aplikasi, Laravel juga menyediakan berbagai fitur untuk mempercepat pengembangan. 
+Salah satunya adalah sistem \textit{routing}, yang memetakan permintaan pengguna ke \textit{controller} yang sesuai sehingga alur logika aplikasi tetap konsisten. 
+Selain itu, Laravel mendukung penggunaan \textit{middleware} sebagai mekanisme penyaring permintaan, misalnya untuk autentikasi, otorisasi, atau perlindungan dari serangan keamanan umum.   
+
+\subsubsection{Perancangan Basis Data}
+\label{subsubsec:db-design}
+Selain pola MVC yang mengatur logika aplikasi, aspek lain yang sama pentingnya adalah rancangan basis data sebagai fondasi penyimpanan informasi pada \textit{data tier}. 
+Bagian ini menjelaskan perancangan skema tabel dan relasi yang mendasari entitas \texttt{Model} dalam kerangka kerja Laravel.
+Pada pola \ac{MVC} yang digunakan di lapisan aplikasi, komponen \texttt{Model} bertugas merepresentasikan data dalam bentuk kelas dan menyediakan mekanisme untuk mengakses maupun memanipulasinya. 
+Komponen ini tidak menyimpan data secara langsung, melainkan menjadi jembatan antara logika aplikasi dan lapisan penyimpanan data. 
+
+Sementara itu, pada arsitektur tiga lapis yang telah dibahas sebelumnya, basis data berada pada \textit{data tier} dan berfungsi sebagai tempat penyimpanan permanen seluruh informasi penting. Agar dapat mendukung kebutuhan aplikasi dan berintegrasi dengan baik melalui \texttt{Model}, diperlukan perancangan basis data yang terstruktur dalam bentuk skema relasional yang siap diimplementasikan.
+
+\paragraph{Skema Tabel.}
+Struktur basis data D’Office terdiri atas sejumlah tabel utama yang saling berhubungan. Tabel~\ref{tab:skema-tabel-final} merinci skema tabel kunci, yakni hanya sebagian skema dan tidak seluruhnya, dengan konvensi penulisan: kolom yang dicetak tebal menandakan \textit{primary key}, sedangkan kolom yang dicetak \textit{miring} menandakan \textit{foreign key}.
+
+\begin{table}[H]
+    \centering
+    \captionsetup{justification=justified,singlelinecheck=false}
+    \caption{Skema tabel utama basis data D'Office.}
+    \label{tab:skema-tabel-final}
+    \begin{tabularx}{\linewidth}{|l|X|}
+        \hline
+        \textbf{Nama Tabel} & \multicolumn{1}{c|}{ \textbf{Kolom dan Tipe Data}} \\
+        \hline
+        \texttt{mahasiswas} & \textbf{id} (PK), nama, npm (UNIQUE) \\
+        \hline
+        \texttt{dosens} & \textbf{id} (PK), nama, nip (UNIQUE) \\
+        \hline
+        \texttt{tugas\_akhirs} & \textbf{id} (PK), \textit{mahasiswa\_id} (FK), \textit{pembimbing\_id} (FK), judul, status \\
+        \hline
+        \texttt{sidangs} & \textbf{id} (PK), \textit{tugas\_akhir\_id} (FK), jadwal\_sidang, jenis \\
+        \hline
+        \texttt{dosen\_sidang} & \textbf{id} (PK), \textit{sidang\_id} (FK), \textit{dosen\_id} (FK), peran (\texttt{ketua}, \texttt{penguji}) \\
+        \hline
+    \end{tabularx}
+\end{table}
+
+\paragraph{Diagram Relasi.}
+Hubungan antar tabel divisualisasikan pada Gambar~\ref{fig:relationship-diagram-final}. 
+Diagram ini memperlihatkan bahwa relasi antara entitas tidak hanya satu-ke-satu, melainkan juga satu-ke-banyak dan banyak-ke-banyak, sehingga struktur basis data mampu merepresentasikan kompleksitas proses akademik.
+
+\begin{figure}[H]
+    \centering
+    \resizebox{\textwidth}{!}{
+    \begin{tikzpicture}[
+        table/.style={rectangle, draw, thick, fill=blue!10, minimum width=3.2cm, minimum height=1cm, align=center},
+        pivot/.style={table, fill=orange!20},
+        assoc/.style={draw, thick}
+    ]
+        % Definisi node tabel utama dan pivot
+        \node[table] (mahasiswas) {\texttt{mahasiswas}};
+        \node[table, right=4cm of mahasiswas] (tugas_akhirs) {\texttt{tugas\_akhirs}};
+        \node[table, above=2.5cm of tugas_akhirs] (dosens) {\texttt{dosens}};
+        \node[table, right=4cm of tugas_akhirs] (sidangs) {\texttt{sidangs}};
+        
+        \node[pivot] (dosen_sidang) at ($(dosens)!0.5!(sidangs)$) {\texttt{dosen\_sidang}};
+
+        % Garis relasi dengan kardinalitas
+        \draw[assoc] (mahasiswas.east) -- (tugas_akhirs.west)
+            node[near start, above, font=\small] {1}
+            node[near end, above, font=\small] {1};
+
+        \draw[assoc] (dosens.south) -- (tugas_akhirs.north)
+            node[near start, left, font=\small] {1}
+            node[near end, left, font=\small] {*}
+            node[midway, above, font=\small, sloped] {membimbing};
+
+        \draw[assoc] (tugas_akhirs.east) -- (sidangs.west)
+            node[near start, above, font=\small] {1}
+            node[near end, above, font=\small] {*};
+
+        \draw[assoc] (dosens.east) -| (dosen_sidang.north)
+            node[near start, above, font=\small] {1}
+            node[near end, left, font=\small] {*};
+        \draw[assoc] (dosen_sidang.east) -| (sidangs.north)
+            node[near start, above, font=\small] {1}
+            node[near end, right, font=\small] {*};
+    \end{tikzpicture}
+    }
+    %\captionsetup{font=small}
+    \caption{Diagram Relasi antar Tabel dengan Kardinalitas.}
+    \label{fig:relationship-diagram-final}
+\end{figure}
+
+Berdasarkan Gambar~\ref{fig:relationship-diagram-final}, setiap \texttt{tugas\_akhir} dimiliki oleh tepat satu \texttt{mahasiswa}, merepresentasikan hubungan satu-ke-satu (\textit{one-to-one}). 
+Hubungan antara \texttt{dosens} dan \texttt{tugas\_akhirs} (sebagai pembimbing) dimodelkan secara langsung sebagai satu-ke-banyak (\textit{one-to-many}). 
+Dengan demikian, satu tugas akhir hanya dapat memiliki satu pembimbing, dan satu dosen dapat membimbing banyak tugas akhir. 
+Demikian pula, sebuah \texttt{tugas\_akhir} dapat memiliki beberapa kali acara \texttt{sidang} (satu-ke-banyak), dan setiap sidang melibatkan banyak dosen (dengan peran berbeda), sehingga hubungan antara \texttt{dosens} dan \texttt{sidangs} juga dimodelkan sebagai banyak-ke-banyak melalui tabel \texttt{dosen\_sidang}. 
+Dengan demikian, desain ini tidak hanya menggambarkan struktur data pada \textit{data tier}, tetapi juga memastikan adanya korespondensi langsung antara tabel-tabel relasional dan entitas \texttt{Model} yang akan diimplementasikan pada lapisan logika aplikasi.
+
+Dengan rancangan basis data yang terstruktur ini, setiap entitas pada lapisan penyimpanan memiliki korespondensi langsung dengan komponen \texttt{Model}. Korespondensi ini kemudian menjadi dasar dalam pemodelan diagram kelas UML yang membahas interaksi antar entitas pada lapisan aplikasi.
+
+\subsubsection{Diagram Kelas}
+\label{subsubsec:class-diagram}
+Sebagaimana dijelaskan pada subseksi~\ref{subsec:perancangan_interaksi}, diagram sekuens pada Gambar~\ref{fig:sequence-diagram} telah digunakan untuk memodelkan alur dinamis pendaftaran sidang. Namun, agar arsitektur perangkat lunak dapat dipahami secara lebih lengkap, diperlukan pula representasi statis yang menggambarkan struktur kelas dan relasi antar komponen utama. Dalam konteks pola \ac{MVC} yang digunakan, diagram kelas berfungsi sebagai cetak biru perangkat lunak yang menekankan keterkaitan antara \textit{controller}, \textit{request validator}, dan \textit{model}.
+
+Gambar~\ref{fig:class-diagram} memperlihatkan diagram kelas untuk fungsionalitas pendaftaran sidang. Diagram ini menunjukkan bahwa \texttt{SidangController} bertugas menangani permintaan terkait proses pendaftaran sidang. Kelas ini memanfaatkan \texttt{SidangStoreRequest} untuk melakukan validasi data masukan, serta berinteraksi dengan \texttt{Sidang} sebagai model yang mewakili entitas sidang pada basis data. Objek \texttt{Sidang} sendiri memiliki asosiasi dengan \texttt{Mahasiswa}, yang merepresentasikan identitas pengguna dengan peran mahasiswa. Selain itu, \texttt{Sidang} diturunkan dari kelas dasar \texttt{Eloquent\textbackslash Model} yang disediakan oleh Laravel, sehingga memperoleh kemampuan bawaan untuk operasi basis data seperti \texttt{save()} dan \texttt{find()}.
+
+\begin{figure}[h!]
+    \centering
+    \resizebox{0.8\textwidth}{!}{
+    \begin{tikzpicture}[
+        node distance=1.5cm and 3cm,
+        class/.style={
+            rectangle split, rectangle split parts=3,
+            draw, fill=yellow!20, % Warna diubah menjadi kuning
+            text width=4.5cm, align=center, % Teks di-center untuk stereotype
+            font=\small
+        },
+        dep/.style={draw, dashed, -{Stealth[length=2mm]}},
+        assoc/.style={draw, thick},
+        inherit/.style={draw, thick, -{open triangle 60}} % Style untuk panah pewarisan
+    ]
+        % Definisi Node Class dengan gaya baru
+        \node[class] (controller) {
+            \textit{\guillemotleft class\guillemotright} \\
+            \textbf{SidangController}
+            \nodepart{second}
+                \raggedright % Rata kiri untuk atribut/metode
+                % Atribut (kosong)
+            \nodepart{third}
+                \raggedright
+                + store(request: SidangStoreRequest) \\
+                + update(request, sidang: Sidang)\\
+        };
+        
+        \node[class, right=of controller] (request) {
+            \textit{\guillemotleft class\guillemotright} \\
+            \textbf{SidangStoreRequest}
+            \nodepart{second}
+                \raggedright
+                % Atribut (kosong)
+            \nodepart{third}
+                \raggedright
+                + authorize(): bool \\
+                + rules(): array\\
+        };
+        
+        \node[class, below=of controller] (model) {
+            \textit{\guillemotleft class\guillemotright} \\
+            \textbf{Sidang}
+            \nodepart{second}
+                \raggedright
+                - mahasiswa\_id: int \\
+                - judul: string \\
+                - status: string\\
+            \nodepart{third}
+                \raggedright
+                + mahasiswa(): BelongsTo
+        };
+        
+        \node[class, right=of model] (mahasiswa) {
+            \textit{\guillemotleft class\guillemotright} \\
+            \textbf{Mahasiswa}
+            \nodepart{second}
+                \raggedright
+                - npm: string \\
+                - user\_id: int\\
+            \nodepart{third}
+                % Metode (kosong)
+        };
+
+        \node[class, text width=3cm, below=of model,yshift=2.5cm] (eloquent) at (0, -9) {
+            \textit{\guillemotleft class\guillemotright} \\
+            \textbf{\texttt{Eloquent\textbackslash Model}}
+            \nodepart{second}
+                % ...
+            \nodepart{third}
+                \raggedright
+                + save() \\
+                + find() \\
+                + ...\\
+        };
+
+        % Hubungan Antar Class (tetap sama)
+        \draw[dep] (controller) -- (request) node[midway, above] {\textit{\guillemotleft use\guillemotright}};
+        \draw[dep] (controller) -- (model) node[midway, above, sloped] {\textit{\guillemotleft use\guillemotright}};
+        \draw[assoc] (model) -- (mahasiswa) 
+            node[midway, above] {memiliki}
+            node[near start, below] {1}
+            node[near end, below] {*};
+        % Menambahkan panah pewarisan
+        \draw[inherit] (model) -- (eloquent);
+
+    \end{tikzpicture}
+    }
+    \captionsetup{font=small}
+    \caption{Diagram Kelas (\textit{Class Diagram}) untuk fungsionalitas pendaftaran sidang.}
+    \label{fig:class-diagram}
+\end{figure}
+
+\subsection{Implementasi Fitur Kunci}
+\label{subsec:implementasi_fitur}
+Untuk memberikan gambaran konkret mengenai proses implementasi, sub-bab ini akan membedah salah satu fitur paling krusial dalam sistem D'Office, yaitu fungsi untuk menangani pengajuan pendaftaran sidang oleh mahasiswa. Fungsionalitas ini melibatkan validasi data, penanganan unggahan berkas (\textit{file upload}), dan penyimpanan informasi ke dalam basis data.
+
+Cuplikan pada Kode~\ref{lst:pendaftaran-sidang} menunjukkan metode \texttt{store()} di dalam kelas \texttt{SidangController}, yang ditulis dalam bahasa PHP menggunakan kerangka kerja Laravel. 
+Metode ini bertanggung jawab untuk memproses data yang dikirim dari formulir pendaftaran sidang. 
+Pertama, Laravel secara otomatis melakukan validasi data yang masuk menggunakan kelas \texttt{SidangStoreRequest}. 
+Jika data tidak valid, proses akan berhenti dan pengguna akan dikembalikan ke formulir dengan pesan eror. 
+Jika valid, proses berlanjut ke tahap kedua, yaitu penanganan berkas. 
+Fungsi \texttt{store()} digunakan untuk menyimpan berkas yang diunggah ke dalam direktori penyimpanan server dan mengembalikan lokasi uniknya. 
+Ketiga, sebuah entri baru dibuat pada tabel basis data \texttt{sidang} menggunakan \texttt{Eloquent} \textit{Model}, di mana semua data yang relevan (termasuk lokasi berkas) disimpan. 
+Terakhir, pengguna diarahkan kembali ke halaman utama pendaftaran sidang dengan sebuah pesan notifikasi bahwa pengajuan telah berhasil.
+
+Lebih jauh, arsitektur yang diterapkan dalam metode ini mencerminkan praktik terbaik dalam pengembangan aplikasi web modern, terutama prinsip pemisahan tanggung jawab (\textit{separation of concerns}). 
+Penggunaan \texttt{SidangStoreRequest} secara efektif memisahkan logika validasi dari logika bisnis utama di dalam controller. 
+Hal ini membuat \texttt{SidangController} lebih ramping, bersih, dan fokus hanya pada tugasnya: mengorkestrasi penyimpanan berkas dan pencatatan data ke basis data. 
+Pemanfaatan \ac{ORM} juga merupakan poin penting, karena ia mengabstraksi interaksi dengan basis data. 
+Alih-alih menulis kueri SQL mentah yang rentan terhadap SQL injection, pengembang dapat berinteraksi dengan basis data melalui objek PHP yang intuitif, sehingga meningkatkan keamanan dan kemudahan pemeliharaan kode. 
+Terakhir, penggunaan \texttt{redirect()->route(...)} setelah operasi berhasil adalah implementasi dari pola desain \ac{PRG}, yang mencegah pengiriman formulir ganda jika pengguna menyegarkan halaman setelah pengajuan. 
+
+\begin{listing}[H]
+\setstretch{1}
+    \begin{minted}[
+        fontsize=\footnotesize
+    ]{php}
+<?php
+namespace App\Http\Controllers;
+use App\Models\Sidang;
+use Illuminate\Http\Request;
+use App\Http\Requests\SidangStoreRequest; // Class untuk validasi
+use Illuminate\Support\Facades\Auth;
+
+class SidangController extends Controller
+{
+    /**
+     * Menyimpan data pendaftaran sidang baru.
+     */
+    public function store(SidangStoreRequest $request)
+    {
+        // 1. Validasi request secara otomatis oleh SidangStoreRequest
+        // 2. Simpan berkas-berkas yang diunggah
+        $pathDraf = $request->file('berkas_draf_ta')
+                           ->store('public/draf-sidang');
+        $pathBimbingan = $request->file('berkas_catatan_bimbingan')
+                                 ->store('public/catatan-bimbingan');
+        // 3. Buat entri baru di basis data
+        $sidang = new Sidang();
+        $sidang->mahasiswa_id = Auth::id();
+        $sidang->judul_tugas_akhir = $request->input('judul');
+        $sidang->path_berkas_draf = $pathDraf;
+        $sidang->path_catatan_bimbingan = $pathBimbingan;
+        $sidang->status = 'MENUNGGU_PERSETUJUAN_PEMBIMBING';
+        $sidang->save();
+
+        // 4. Arahkan pengguna kembali dengan pesan sukses
+        return redirect()->route('sidang.index')
+                         ->with('success', 'Pendaftaran sidang berhasil diajukan.');
+    }
+}
+    \end{minted}
+    \captionsetup{font=small}
+    \caption{Contoh kode implementasi fitur pendaftaran sidang.}
+    \label{lst:pendaftaran-sidang}
+\end{listing}
+
+\section{Pengembangan Templat Penulisan}
+\label{subsec:pengembangan_templat}
+Selain sistem D'Office, keluaran penting lainnya dari penelitian ini adalah seperangkat templat penulisan yang dirancang untuk secara otomatis menerapkan Pedoman Penulisan Tugas Akhir UI. Dua jenis templat dikembangkan untuk mengakomodasi kebutuhan pengguna yang berbeda, seperti diilustrasikan pada Gambar~\ref{fig:templat-komponen}.
+
+\begin{figure}[h!]
+    \centering
+    \resizebox{0.8\textwidth}{!}{
+    \begin{tikzpicture}[
+        node distance=1.5cm and 2cm,
+        auto,
+        main/.style={rectangle, draw, fill=blue!20, text width=10em, text centered, minimum height=1.5cm},
+        tool/.style={rectangle, draw, rounded corners, fill=gray!10, align=center, minimum width=8em}
+    ]
+        \node[main] (templat) {Templat Penulisan Tugas Akhir};
+        \node[tool, below left=of templat] (latex) {Templat \LaTeX \\ (\texttt{.cls} dan \texttt{.tex})};
+        \node[tool, below right=of templat] (word) {Templat MS Word \\ (\texttt{.dotx})};
+
+        \draw[->, thick] (templat) -- (latex);
+        \draw[->, thick] (templat) -- (word);
+    \end{tikzpicture}
+    }
+    %\captionsetup{font=small}
+    \caption{Komponen templat penulisan yang dikembangkan.}
+    \label{fig:templat-komponen}
+\end{figure}
+
+Pengembangan templat ini berfokus pada aspek pemformatan dan dapat diunduh oleh mahasiswa melalui menu ``Unduh Templat'' di D'Office. 
+Adapun, panduan mengenai cara mengisi templat dengan konten berkualitas secara substantif terdapat pada \textbf{Lampiran B}. 
+
+\subsection{Implementasi Templat \LaTeX{}}
+Pengembangan templat \LaTeX{} difokuskan pada pembuatan sebuah proyek yang modular dan mudah digunakan, memisahkan antara konten, konfigurasi, dan aset visual.
+
+\begin{figure}[h!]
+    \centering
+    \begin{minted}[
+        fontsize=\footnotesize
+    ]{text}
+.
+|-- _internals/      (Konfigurasi inti, tidak perlu diubah)
+|-- assets/
+|   |-- pdfs/        (Tempat untuk file PDF)
+|   `-- pics/        (Tempat untuk semua file gambar)
+|-- src/
+|   |-- 00-front_matter/
+|   |-- 01-body/
+|   `-- 99-back_matter/
+|-- pustaka.bib      (Database referensi Anda)
+|-- settings.tex     (Pengaturan judul, nama, NPM, dll.)
+`-- thesis.tex       (File utama untuk kompilasi)
+    \end{minted}
+    \captionsetup{font=small}
+    \caption{Struktur direktori dari proyek templat \LaTeX{}.}
+    \label{fig:struktur-latex}
+\end{figure}
+
+Struktur direktori templat dirancang agar pengguna dapat fokus pada penulisan konten tanpa harus mengubah konfigurasi inti. 
+Visualisasi dari struktur ini dapat dilihat pada Gambar~\ref{fig:struktur-latex}, dan fungsi dari setiap berkas kunci dijelaskan pada Tabel~\ref{tab:fungsi-berkas}.
+
+\begin{table}[h!]
+    \centering
+    \captionsetup{justification=justified,singlelinecheck=false}
+    \caption{Penjelasan berkas dan direktori kunci pada templat \LaTeX{}.}
+    \label{tab:fungsi-berkas}
+    \begin{tabularx}{\linewidth}{|l|X|}
+        \hline
+        \textbf{Berkas/Direktori} & \textbf{Fungsi dan Panduan Penggunaan} \\
+        \hline
+        \texttt{thesis.tex} & Berkas \textbf{induk} yang menyatukan semua bagian. Pengguna hanya perlu meng-kompilasi berkas ini. \\
+        \hline
+        \texttt{settings.tex} & Berkas \textbf{konfigurasi utama}. Edit berkas ini untuk mengisi judul skripsi, nama, NPM, program studi, pembimbing, dan penguji. \\
+        \hline
+        \texttt{pustaka.bib} & Berkas \textbf{basis data referensi}. Masukkan semua sumber sitasi Anda di sini dalam format BibTeX. \\
+        \hline
+        \texttt{src/00-front\_matter/} & Direktori untuk halaman-halaman awal. Edit berkas \texttt{.tex} di dalamnya, seperti \texttt{06-abstrak.tex} dan \texttt{04-pengantar.tex}, untuk mengisi konten bagian awal. \\
+        \hline
+        \texttt{src/01-body/} & Direktori untuk bab-bab utama. Tulis konten Bab 1 Anda di \texttt{01-bab1.tex}, Bab 2 di \texttt{02-bab2.tex}, dan seterusnya. \\
+        \hline
+        \texttt{src/99-back\_matter/} & Direktori untuk bagian akhir. Tulis konten lampiran Anda di dalam berkas \texttt{lampiran.tex}. \\
+        \hline
+        \texttt{assets/pics/} & Direktori untuk menyimpan semua berkas gambar (misalnya, \texttt{.png}, \texttt{.jpg}) yang akan dimasukkan ke dalam naskah. \\
+        \hline
+    \end{tabularx}
+\end{table}
+
+Proses penulisan tugas akhir menggunakan templat ini menjadi sangat terstruktur. Mahasiswa memulai dengan mengisi data personal di \texttt{settings.tex}, kemudian fokus menulis substansi di dalam direktori \texttt{src/}, menambahkan referensi ke \texttt{pustaka.bib}, dan meletakkan gambar di \texttt{assets/pics/}. Adapun panduan yang lebih mendalam mengenai cara menggunakan templat dengan baik agar dapat menggunakan fitur-fitur pengolahan teks yang biasa digunakan dapat ditemukan pada \textbf{Lampiran C}.
+
+\subsection{Implementasi Templat Microsoft Word}
+Untuk mengakomodasi pengguna yang tidak terbiasa dengan \LaTeX{}, sebuah templat Microsoft Word (\texttt{.dotx}) juga dikembangkan. 
+Templat ini memanfaatkan fitur \textbf{Styles} secara ekstensif. Telah didefinisikan berbagai \textit{style} (misalnya, ``Judul Bab'', ``Paragraf Isi'', ``\textit{Caption} Gambar'') yang sudah diatur sesuai pedoman. 
+Pengguna hanya perlu menerapkan \textit{style} yang sesuai pada setiap bagian teks untuk mendapatkan format yang konsisten.
+
+% Kode ini adalah kelanjutan dari sub-bab sebelumnya.
+% Pastikan Anda sudah menambahkan library TikZ berikut di preamble:
+% \usetikzlibrary{shapes.geometric, 3d, positioning, arrows.meta}
+
+\section{Manajemen Proyek}
+\label{sec:manajemen_proyek}
+Selain perancangan teknis, keberhasilan sebuah proyek rekayasa perangkat lunak juga sangat bergantung pada manajemen waktu dan perencanaan yang baik. 
+Pengerjaan proyek ini mengikuti fase-fase dari Siklus Hidup Pengembangan Sistem \ac{SDLC} yang telah diuraikan pada Bab~\ref{cha:studiliteratur}. 
+Untuk memastikan setiap fase dapat selesai sesuai target, dibuat sebuah jadwal kerja yang dipetakan dalam linimasa proyek.
+
+Tabel~\ref{tab:gantt-tabular} menguraikan fase-fase utama pengerjaan proyek, yang dipetakan ke dalam tahapan SDLC, beserta alokasi waktunya dalam kurun waktu satu tahun akademik.
+
+\begin{table}[H]
+    \centering
+    \Huge
+    \captionsetup{justification=justified,singlelinecheck=false}
+    \caption{Linimasa pengerjaan proyek berdasarkan fase SDLC.}
+    \label{tab:gantt-tabular}
+    \resizebox{\textwidth}{!}{%
+    \begin{tabular}{|l|l|c|c|c|c|c|c|c|c|c|c|c|c|}
+        \hline
+        \multicolumn{2}{|c|}{\textbf{Fase SDLC \& Aktivitas}} & \multicolumn{6}{c|}{\textbf{Semester Ganjil 2025}} & \multicolumn{6}{c|}{\textbf{Semester Genap 2026}} \\
+        \cline{3-14}
+        \multicolumn{2}{|c|}{} & \textbf{Agu} & \textbf{Sep} & \textbf{Okt} & \textbf{Nov} & \textbf{Des} & \textbf{Jan} & \textbf{Feb} & \textbf{Mar} & \textbf{Apr} & \textbf{Mei} & \textbf{Jun} & \textbf{Jul} \\
+        \hline
+        \multirow{2}{*}{\textbf{1. Analisis}} & Studi Literatur \& Analisis Kebutuhan & \multicolumn{3}{c|}{\cellcolor{gray!40}} & & & & & & & & & \\
+        & Penyusunan Proposal TA & & & \multicolumn{2}{c|}{\cellcolor{gray!40}} & & & & & & & & \\
+        \hline
+        \textbf{2. Perancangan} & Perancangan Sistem (UML) & & & & & \multicolumn{2}{c|}{\cellcolor{gray!40}} & & & & & & \\
+        \hline
+        \multirow{2}{*}{\textbf{3. Implementasi}} & Implementasi Sistem D'Office & & & & & & & \multicolumn{3}{c|}{\cellcolor{gray!40}} & & & \\
+        & Pengembangan Templat (LaTeX \& Word) & & & & & & & & \multicolumn{2}{c|}{\cellcolor{gray!40}} & & & \\
+        \hline
+        \textbf{4. Pengujian} & Pengujian \& Evaluasi Sistem & & & & & & & & & & \multicolumn{1}{c|}{\cellcolor{gray!40}} & & \\
+        \hline
+        \textbf{5. Dokumentasi} & Penyusunan Laporan Final TA & & & & & & & & & & \multicolumn{2}{c|}{\cellcolor{gray!40}} & \\
+        \hline
+        \multicolumn{2}{|l|}{\textit{Milestone: Sidang Tugas Akhir}} & & & & & & & & & & & & \multicolumn{1}{c|}{\cellcolor{red!40}} \\
+        \hline
+    \end{tabular}%
+    }
+\end{table}
+
+Linimasa pengerjaan proyek pada Tabel~\ref{tab:gantt-tabular} dirancang untuk berjalan selama satu tahun akademik penuh, mengikuti tahapan SDLC secara sekuensial. Semester Ganjil difokuskan pada dua tahap awal SDLC. Tahap Analisis, yang mencakup studi literatur dan penyusunan proposal, dilaksanakan dari Agustus hingga November. Tahap ini dilanjutkan dengan tahap Perancangan sistem secara mendetail, yang dialokasikan dari Desember hingga Januari.
+
+Memasuki Semester Genap, fokus beralih ke tahap-tahap selanjutnya. Tahap Implementasi, yang mencakup pengembangan sistem D'Office dan templat, dimulai pada bulan Februari dan berlangsung hingga April. Tahap Pengujian kemudian dilakukan pada bulan Mei. Tahap terakhir, yaitu Dokumentasi atau penyusunan laporan akhir, berjalan tumpang tindih dengan tahap pengujian, mulai dari bulan Mei hingga Juni. Seluruh rangkaian proyek kemudian ditutup dengan sidang tugas akhir yang dijadwalkan pada bulan Juli.

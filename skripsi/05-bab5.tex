@@ -1,0 +1,46 @@
+%-----------------------------------------------------------------------------%
+\chapter{\babLima}
+\label{cha:penutup}
+
+Bab ini merupakan bagian akhir dari laporan tugas akhir yang merangkum keseluruhan hasil penelitian dan pembahasan yang telah diuraikan pada bab-bab sebelumnya. 
+Bagian pertama, Kesimpulan, akan menjawab secara lugas setiap butir rumusan masalah yang telah ditetapkan. 
+Bagian kedua, Saran, akan memberikan rekomendasi untuk pengembangan sistem D'Office dan templat di masa mendatang, serta arahan untuk penelitian selanjutnya yang relevan.
+
+\section{Kesimpulan}
+\label{sec:kesimpulan}
+Berdasarkan hasil perancangan, implementasi, dan evaluasi yang telah dilakukan, dapat ditarik beberapa kesimpulan utama yang selaras dengan tujuan penelitian:
+\begin{enumerate}
+    \item Telah berhasil dirancang dan dibangun sebuah purwarupa fungsional sistem pengelolaan tugas akhir berbasis web bernama D'Office. 
+    Sistem ini berhasil mengintegrasikan dan menyederhanakan alur kerja administrasi, mulai dari pengajuan judul hingga pengunggahan berkas final, yang sebelumnya berjalan secara manual dan terdesentralisasi.
+    
+    \item Sistem D'Office terbukti secara kuantitatif dapat meningkatkan efektivitas dan efisiensi proses administrasi tugas akhir. 
+    Hasil pengujian menunjukkan bahwa penggunaan sistem ini berhasil mengurangi Waktu Pengerjaan Tugas (\textit{Time on Task}) rata-rata sebesar 76\% dan meningkatkan Tingkat Keberhasilan Tugas (\textit{Task Success Rate}) hingga 100\% pada skenario-skenario kunci. 
+    Kinerja teknis sistem dari sisi basis data dan jaringan juga terbukti sangat responsif.
+    
+    \item Templat \LaTeX{} yang dikembangkan sebagai bagian dari solusi terpadu terbukti sangat efektif dalam meningkatkan akurasi dan konsistensi format penulisan. 
+    Kelompok pengguna yang menggunakan templat berhasil mencapai Skor Kepatuhan Format rata-rata 97.5 dari 100, jauh lebih tinggi dibandingkan kelompok kontrol (74.0). 
+    Hal ini memvalidasi dampak positif dari templat dalam mengurangi revisi non-substantif.
+    
+    \item Secara kualitatif, antarmuka pengguna (UI) dan pengalaman pengguna (UX) dari sistem D'Office dinilai sangat baik. 
+    Analisis heuristik menunjukkan bahwa desain sistem telah menerapkan prinsip-prinsip kebergunaan yang fundamental, seperti visibilitas status sistem, konsistensi, dan kontrol pengguna. 
+    Hal ini juga didukung oleh skor \ac{SUS} sebesar 85.5, yang masuk dalam kategori \textit{Excellent}.
+\end{enumerate}
+
+\section{Saran}
+\label{sec:saran}
+Berdasarkan temuan dan keterbatasan dalam penelitian ini, berikut adalah beberapa saran yang dapat menjadi pertimbangan untuk pengembangan dan penelitian di masa mendatang:
+
+\begin{enumerate}
+    \item \textbf{Untuk Pengembangan Sistem D'Office:}
+    \begin{itemize}
+        \item Prioritas utama pengembangan selanjutnya adalah membangun jembatan integrasi (\textit{API bridge}) secara \textit{real-time} dengan Sistem Informasi Akademik (SIAK-NG) untuk mengotomatiskan sinkronisasi data mahasiswa dan catatan bimbingan.
+        \item Menambahkan modul analisis anti-plagiarisme yang terintegrasi langsung di dalam sistem, sehingga dosen dapat memeriksa orisinalitas naskah tanpa perlu menggunakan platform eksternal.
+    \end{itemize}
+    
+    \item \textbf{Untuk Penelitian Selanjutnya:}
+    \begin{itemize}
+        \item Melakukan studi longitudinal dengan menerapkan sistem D'Office dan templat pada satu angkatan penuh selama satu tahun akademik. 
+        Penelitian semacam ini akan memberikan data yang lebih kaya mengenai dampak jangka panjang terhadap waktu kelulusan dan kualitas tugas akhir.
+        \item Mengembangkan dan mengevaluasi efektivitas modul-modul tambahan, seperti sistem penjadwalan ruang sidang otomatis atau forum diskusi terintegrasi antara mahasiswa bimbingan dengan dosennya.
+    \end{itemize}
+\end{enumerate}
