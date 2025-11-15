@@ -422,64 +422,39 @@ Fase pertama, yang diimplementasikan dalam skrip \texttt{alpha\_1.py}, bertanggu
 
 \begin{listing}[H]
 \setstretch{1}
-\begin{minted}[fontsize=\footnotesize, linenos, breaklines]{text}
-// Pseudocode untuk Fase 1 (Ekstraksi Payload)
-
-Definisi: N_PACKETS = 10, PAYLOAD_LEN = 784
-Input: SOURCE_DIR (direktori berisi .pcap)
-Output: OUTPUT_DATA_FILE (.npy), OUTPUT_LABELS_FILE (.csv)
-
-FUNGSI process_pcap(file):
-    // 1. Inisialisasi matriks flow (10x784) dengan nol
-    matriks_flow = ArrayNol(N_PACKETS, PAYLOAD_LEN)
-    label_flow = dapatkan_label(file)
-    
-    coba:
-        packets = baca_pcap(file)
-    kecuali Error:
-        kembalikan null // Gagal baca pcap
-    
-    hitung_paket = 0
-    UNTUK setiap pkt dalam packets:
-        // 2. Hanya proses N_PACKETS pertama
-        JIKA hitung_paket >= N_PACKETS MAKA KELUAR_LOOP
-        
-        payload = dapatkan_payload(pkt) // Hanya payload TCP atau UDP
-        
-        // 3. Hanya proses jika ada payload
-        JIKA payload TIDAK KOSONG:
-            // 4. Inisialisasi vektor paket (784,) dengan nol
-            vektor_paket = ArrayNol(PAYLOAD_LEN)
-            panjang_copy = min(panjang(payload), PAYLOAD_LEN)
-            
-            // 5. Salin dan Normalisasi byte
-            data_byte = konversi_ke_byte(payload, panjang_copy)
-            data_normalisasi = data_byte / 255.0
-            
-            vektor_paket[0...panjang_copy] = data_normalisasi
-            
-            // Masukkan ke matriks flow
-            matriks_flow[hitung_paket] = vektor_paket
-            hitung_paket = hitung_paket + 1
-    
-    kembalikan matriks_flow, label_flow
-
-FUNGSI main():
-    daftar_file = dapatkan_semua_file_pcap(SOURCE_DIR)
-    
-    // Proses semua file secara paralel
-    hasil = JalankanParalel(process_pcap, daftar_file)
-    
-    // Pisahkan data dan label
-    (list_data_X, list_label_Y) = pisahkan_hasil(hasil)
-    
-    // Tumpuk menjadi array NumPy besar
-    data_X_final = TumpukArray(list_data_X) // Bentuk: (N, 10, 784)
-    
-    // Simpan ke file
-    simpan_npy(data_X_final, OUTPUT_DATA_FILE)
-    simpan_csv(list_label_Y, OUTPUT_LABELS_FILE)
-\end{minted}
+\begin{algorithm}[H]
+\begin{algorithmic}[1]
+    \State \textbf{Definisi:} N\_PACKETS $\gets 10$, PAYLOAD\_LEN $\gets 784$
+    \State \textbf{Input:} SOURCE\_DIR (direktori .pcap)
+    \State \textbf{Output:} OUTPUT\_DATA\_FILE (.npy), OUTPUT\_LABELS\_FILE (.csv)
+    \item[]
+    \Function{ProcessPcap}{file}
+        \State $matriks\_flow \gets \Call{ArrayNol}{N\_PACKETS, PAYLOAD\_LEN}$
+        \State $label \gets \Call{DapatkanLabel}{file}$
+        \State $packets \gets \Call{BacaPcap}{file}$
+        \State $idx \gets 0$
+        \For{setiap $pkt$ \textbf{in} $packets$ dan $idx < N\_PACKETS$}
+            \State $payload \gets \Call{DapatkanPayload}{pkt}$
+            \If{$payload \neq null$}
+                \State $vektor \gets \Call{ArrayNol}{PAYLOAD\_LEN}$
+                \State $n \gets \min(\Call{panjang}{payload}, PAYLOAD\_LEN)$
+                \State $vektor[0...n] \gets \Call{KonversiKeByte}{payload, n} / 255.0$
+                \State $matriks\_flow[idx] \gets vektor$
+                \State $idx \gets idx + 1$
+            \EndIf
+        \EndFor
+        \State \Return $matriks\_flow, label$
+    \EndFunction
+    \item[]
+    \Procedure{Main}{}
+        \State $files \gets \Call{DapatkanSemuaFilePcap}{SOURCE\_DIR}$
+        \State $(dataX, labelY) \gets \Call{JalankanParalel}{ProcessPcap, files}$
+        \State $arrayX \gets \Call{TumpukArray}{dataX}$
+        \State \Call{SimpanNpy}{arrayX, outputDataFile}
+        \State \Call{SimpanCsv}{labelY, outputLabelsFile}
+    \EndProcedure
+\end{algorithmic}
+\end{algorithm}
 \captionsetup{font=small}
 \caption{Pseudocode untuk Fase 1: Ekstraksi Data Payload Mentah.}
 \label{lst:pseudo_alpha1}
@@ -553,59 +528,41 @@ Fase kedua, diimplementasikan dalam \texttt{alpha\_2.py}, menggunakan data \text
 
 \begin{listing}[H]
 \setstretch{1}
-\begin{minted}[fontsize=\footnotesize, linenos, breaklines]{text}
-// Pseudocode untuk Fase 2 (Pelatihan Encoder & Generasi Fitur)
-// Berdasarkan alpha_2.py
-
-Definisi: FEATURE_VECTOR_SIZE = 128
-Input: DATA_FILE (.npy), LABELS_FILE (.csv)
-Output: OUTPUT_ALPHA_V3_FILE (.csv), OUTPUT_ENCODER_MODEL_FILE (.keras)
-
-FUNGSI build_model(num_classes):
-    // Definisikan arsitektur CNN
-    input = Input(shape=(7840, 1))
-    x = Conv1D(filters=32) -> MaxPooling1D(pool_size=4)
-    x = Conv1D(filters=64) -> MaxPooling1D(pool_size=4)
-    x = Conv1D(filters=128) -> MaxPooling1D(pool_size=4)
-    x = Flatten(x)
-    
-    // --- Ini adalah lapisan ENCODER ---
-    x = Dense(FEATURE_VECTOR_SIZE, name="encoder_output")
-    x = Dropout(0.5)(x)
-    // ----------------------------------
-    
-    // --- Ini adalah lapisan CLASSIFIER (untuk pelatihan) ---
-    output = Dense(num_classes, activation="softmax")
-    
-    model = Model(inputs=input, outputs=output)
-    model.compile(optimizer="adam", loss="categorical_crossentropy")
-    kembalikan model
-
-FUNGSI main():
-    (X_full, y_full, df_labels) = load_and_prepare_data()
-    // 1. Bentuk ulang data
-    X_full_reshaped = reshape(X_full, (N, 7840, 1))
-    // 2. Siapkan label (one-hot encoding)
-    y_full_categorical = to_categorical(y_full['application'])
-    
-    // 3. Bangun dan Latih Model
-    model = build_model(num_classes)
-    (X_train, X_val, y_train, y_val) = train_test_split(X_full_reshaped, ...)
-    model.fit(X_train, y_train, validation_data=(X_val, y_val), ...)
-    
-    // 4. "Potong" model untuk mendapatkan encoder
-    encoder_model = Model(inputs=model.input, 
-                          outputs=model.get_layer("encoder_output").output)
-    
-    // 5. Gunakan encoder untuk memprediksi (ekstrak fitur) pada SEMUA data
-    alpha_features = encoder_model.predict(X_full_reshaped) // Bentuk: (N, 128)
-    
-    // 6. Simpan hasil
-    df_alpha = DataFrame(alpha_features, columns=['alpha_pp_0', ...])
-    df_final = gabung(df_labels['filename'], df_alpha)
-    simpan_csv(df_final, OUTPUT_ALPHA_V3_FILE)
-    encoder_model.save(OUTPUT_ENCODER_MODEL_FILE)
-\end{minted}
+\begin{algorithm}[H]
+\begin{algorithmic}[1]
+    \State \textbf{Definisi:} FEATURE\_VECTOR\_SIZE $\gets 128$
+    \State \textbf{Input:} DATA\_FILE (.npy), LABELS\_FILE (.csv)
+    \State \textbf{Output:} OUTPUT\_ALPHA\_V3\_FILE (.csv), OUTPUT\_ENCODER\_MODEL\_FILE (.keras)
+    \item[]
+    \Function{BuildModel}{numClasses}
+        \State $input \gets \Call{Input}{(7840, 1)}$
+        \State $x \gets \Call{Conv1D}{32} \to \Call{MaxPooling1D}{4}$
+        \State $x \gets \Call{Conv1D}{64} \to \Call{MaxPooling1D}{4}$
+        \State $x \gets \Call{Conv1D}{128} \to \Call{MaxPooling1D}{4}$
+        \State $x \gets \Call{Flatten}{x}$
+        \State $x \gets \Call{Dense}{FEATURE\_VECTOR\_SIZE, \text{name}=\text{"encoder\_output"}}$
+        \State $x \gets \Call{Dropout}{0.5}(x)$
+        \State $output \gets \Call{Dense}{numClasses, \text{activation}=\text{"softmax"}}$
+        \State $model \gets \Call{Model}{input, output}$
+        \State \Call{Compile}{model, \text{optimizer}=\text{"adam"}}
+        \State \Return $model$
+    \EndFunction
+    \item[]
+    \Procedure{Main}{}
+        \State $(X, y, labels) \gets \Call{LoadData}{}$
+        \State $X \gets \Call{Reshape}{X, (N, 7840, 1)}$
+        \State $y \gets \Call{ToCategorical}{y}$
+        \State $model \gets \Call{BuildModel}{numClasses}$
+        \State $(X_{train}, X_{val}, y_{train}, y_{val}) \gets \Call{Split}{X, y}$
+        \State \Call{Fit}{model, $X_{train}$, $y_{train}$, validation: $(X_{val}, y_{val})$}
+        \State $encoder \gets \Call{Model}{model.input, \text{layer["encoder\_output"]}}$
+        \State $features \gets \Call{Predict}{encoder, X}$ \Comment{Bentuk: (N, 128)}
+        \State $df \gets \Call{Gabung}{labels, features}$
+        \State \Call{SimpanCsv}{df, outputAlphaFile}
+        \State \Call{Save}{encoder, outputEncoderFile}
+    \EndProcedure
+\end{algorithmic}
+\end{algorithm}
 \captionsetup{font=small}
 \caption{Pseudocode untuk Fase 2: Pelatihan Encoder dan Generasi Fitur $\alpha$.}
 \label{lst:pseudo_alpha2}
@@ -797,53 +754,38 @@ Implementasi ekstraksi fitur $\beta$ dilakukan oleh skrip \texttt{v2\_beta.py} (
 
 \begin{listing}[H]
 \setstretch{1}
-\begin{minted}[fontsize=\footnotesize, linenos, breaklines]{text}
-// Pseudocode Ringkas untuk Ekstraksi Komponen Beta (Statistik Flow)
-// Berdasarkan v2_beta.py
-
-Input: FLOW_DIR (direktori .pcap)
-Output: OUTPUT_CSV (file .csv berisi fitur beta)
-
-// Fungsi 'calculate_stats' didefinisikan di tempat lain,
-// ia mengambil sebuah daftar angka dan mengembalikan 9 statistik
-// (count, sum, mean, std, min, max, median, p25, p75)
-
-FUNGSI process_pcap_file(file):
-    // 1. Dapatkan label dari nama file
-    (app, cat, type) = get_flow_labels(file)
-    JIKA app KOSONG MAKA kembalikan null
-    
-    // 2. Tentukan IP Klien & pisahkan paket secara bidireksional
-    packets = baca_pcap(file)
-    client_ip = dapatkan_IP_sumber_paket_pertama(packets)
-    
-    (list_c2s_sizes, list_c2s_times) = DapatkanPaket(packets, arah="c2s", client_ip)
-    (list_s2c_sizes, list_s2c_times) = DapatkanPaket(packets, arah="s2c", client_ip)
-
-    // 3. Hitung Inter-Arrival Times (IAT) bidireksional
-    list_c2s_iats = hitung_selisih_waktu(list_c2s_times)
-    list_s2c_iats = hitung_selisih_waktu(list_s2c_times)
-    
-    // 4. Hitung 36 fitur statistik (9 statistik x 4 daftar)
-    fitur_beta = {}
-    update(fitur_beta, calculate_stats(list_c2s_sizes, "c2s_size"))
-    update(fitur_beta, calculate_stats(list_s2c_sizes, "s2c_size"))
-    update(fitur_beta, calculate_stats(list_c2s_iats, "c2s_iat"))
-    update(fitur_beta, calculate_stats(list_s2c_iats, "s2c_iat"))
-    
-    // 5. Tambahkan 3 fitur total flow (durasi, total paket, total volume)
-    update(fitur_beta, hitung_fitur_total_flow(list_c2s_times, ...))
-    
-    // 6. Gabungkan label dan fitur
-    hasil_akhir = gabung(label, fitur_beta)
-    kembalikan hasil_akhir
-
-// ------------- PROSES UTAMA -------------
-// 1. Dapatkan daftar semua file .pcap dari FLOW_DIR
-// 2. Jalankan FUNGSI process_pcap_file SECARA PARALEL untuk setiap file
-// 3. Kumpulkan semua 'hasil_akhir' yang valid
-// 4. Konversi kumpulan hasil menjadi DataFrame dan simpan ke OUTPUT_CSV
-\end{minted}
+\begin{algorithm}[H]
+\begin{algorithmic}[1]
+    \State \textbf{Input:} FLOW\_DIR (direktori .pcap)
+    \State \textbf{Output:} OUTPUT\_CSV (file .csv berisi fitur beta)
+    \item[]
+    \Function{ProcessPcap}{file}
+        \State $(app, cat, type) \gets \Call{GetFlowLabels}{file}$
+        \If{$app = null$} \Return $null$ \EndIf
+        \State $packets \gets \Call{BacaPcap}{file}$
+        \State $clientIP \gets \Call{GetSourceIP}{packets[0]}$
+        \State $(sizesC2S, timesC2S) \gets \Call{GetPackets}{packets, clientIP, arahC2S}$
+        \State $(sizesS2C, timesS2C) \gets \Call{GetPackets}{packets, clientIP, arahS2C}$
+        \State $iatsC2S \gets \Call{HitungSelisih}{timesC2S}$
+        \State $iatsS2C \gets \Call{HitungSelisih}{timesS2C}$
+        \State $fitur \gets \{\}$
+        \State $stats1 \gets \Call{CalcStats}{sizesC2S}$
+        \State $stats2 \gets \Call{CalcStats}{sizesS2C}$
+        \State $stats3 \gets \Call{CalcStats}{iatsC2S}$
+        \State $stats4 \gets \Call{CalcStats}{iatsS2C}$
+        \State $stats5 \gets \Call{HitungFiturFlow}{timesC2S, timesS2C}$
+        \State $fitur \gets \Call{Gabung}{stats1, stats2, stats3, stats4, stats5}$
+        \State \Return $(app, cat, type, fitur)$
+    \EndFunction
+    \item[]
+    \Procedure{Main}{}
+        \State $files \gets \Call{GetAllPcap}{FLOW\_DIR}$
+        \State $hasil \gets \Call{JalankanParalel}{ProcessPcap, files}$
+        \State $df \gets \Call{ToDataFrame}{hasil}$
+        \State \Call{SimpanCsv}{df, outputFile}
+    \EndProcedure
+\end{algorithmic}
+\end{algorithm}
 \captionsetup{font=small}
 \caption{Pseudocode untuk Ekstraksi Komponen $\beta$ (Statistik Level Flow).}
 \label{lst:pseudo_beta}
@@ -978,71 +920,49 @@ Kunci dari analisis ini adalah definisi "burst". Dalam penelitian ini, sebuah \t
 \subsubsection{Implementasi Ekstraksi (gamma.py)}
 Ekstraksi fitur $\gamma$ diimplementasikan dalam skrip \texttt{gamma.py}. Berbeda dengan komponen $\beta$, analisis \textit{burst} ini bersifat \textbf{unidireksional} dalam arti menggabungkan paket dari kedua arah (Klien $\leftrightarrow$ Server) menjadi satu urutan waktu sebelum diproses.
 
-Logika inti dari skrip ini diringkas dalam Pseudocode \ref{lst:pseudo_gamma}.
+Logika inti dari skrip ini diringkas dalam Kode \ref{lst:pseudo_gamma}.
 
 \begin{listing}[H]
 \setstretch{1}
-\begin{minted}[fontsize=\footnotesize, linenos, breaklines]{text}
-// Pseudocode Inti Algoritma Deteksi Burst (Komponen Gamma)
-// Berdasarkan gamma.py
-
-Definisi: THRESHOLD = 1.0 (detik)
-
-// 1. Dapatkan semua paket (waktu, ukuran) dari flow, 
-//    sudah digabung (bidireksional) dan diurutkan berdasarkan waktu.
-list_semua_paket = DapatkanSemuaPaketTerurut(file)
-
-// 2. Inisialisasi daftar hasil
-list_counts, list_volumes, list_durations, list_idles = [], [], [], []
-
-// 3. Inisialisasi state burst pertama
-pkt_pertama = list_semua_paket[0]
-burst_count = 1
-burst_volume = pkt_pertama.ukuran
-burst_start_time = pkt_pertama.waktu
-last_pkt_time = pkt_pertama.waktu
-
-// 4. Loop inti deteksi burst (mulai dari paket KEDUA)
-UNTUK setiap (pkt_time, pkt_size) dalam list_semua_paket[1...]:
-    idle_time = pkt_time - last_pkt_time
-    
-    JIKA idle_time < THRESHOLD:
-        // Lanjutkan burst saat ini
-        burst_count += 1
-        burst_volume += pkt_size
-    LAIN:
-        // Batas burst terdeteksi (idle_time >= 1.0s)
-        // a. Simpan burst sebelumnya
-        tambahkan (last_pkt_time - burst_start_time) ke list_durations
-        tambahkan burst_count ke list_counts
-        tambahkan burst_volume ke list_volumes
-        
-        // b. Simpan waktu jeda (antar burst)
-        tambahkan idle_time ke list_idles
-        
-        // c. Reset state untuk burst baru
-        burst_count = 1
-        burst_volume = pkt_size
-        burst_start_time = pkt_time
-    
-    last_pkt_time = pkt_time // Perbarui waktu paket terakhir
-
-
-// 5. Simpan burst TERAKHIR (setelah loop selesai)
-tambahkan (last_pkt_time - burst_start_time) ke list_durations
-tambahkan burst_count ke list_counts
-tambahkan burst_volume ke list_volumes
-
-// 6. Hitung 37 fitur final
-fitur_gamma = {}
-fitur_gamma["total_burst_count"] = panjang(list_counts)
-update(fitur_gamma, calculate_stats(list_counts, "burst_pkt_count"))
-update(fitur_gamma, calculate_stats(list_volumes, "burst_vol"))
-update(fitur_gamma, calculate_stats(list_durations, "burst_dur"))
-update(fitur_gamma, calculate_stats(list_idles, "burst_idle"))
-
-kembalikan fitur_gamma
-\end{minted}
+\begin{algorithm}[H]
+\begin{algorithmic}[1]
+    \State \textbf{Definisi:} THRESHOLD $\gets 1.0$ (detik)
+    \State \textbf{Input:} file (.pcap)
+    \State \textbf{Output:} fitur\_gamma (37 fitur statistik burst)
+    \item[]
+    \Function{DeteksiBurst}{file}
+        \State $packets \gets \Call{GetAllPacketsSorted}{file}$
+        \State $(counts, volumes, durations, idles) \gets ([], [], [], [])$
+        \State $(firstTime, firstSize) \gets packets[0]$
+        \State $(burstCount, burstVolume, burstStart, lastTime) \gets (1, firstSize, firstTime, firstTime)$
+        \For{each $(t, s)$ in $packets[1...]$}
+            \State $idle \gets t - lastTime$
+            \If{$idle < THRESHOLD$}
+                \State $burstCount \gets burstCount + 1$
+                \State $burstVolume \gets burstVolume + s$
+            \Else
+                \State \Call{Append}{durations, $lastTime - burstStart$}
+                \State \Call{Append}{counts, burstCount}
+                \State \Call{Append}{volumes, burstVolume}
+                \State \Call{Append}{idles, idle}
+                \State $(burstCount, burstVolume, burstStart) \gets (1, s, t)$
+            \EndIf
+            \State $lastTime \gets t$
+        \EndFor
+        \State \Call{Append}{durations, $lastTime - burstStart$}
+        \State \Call{Append}{counts, burstCount}
+        \State \Call{Append}{volumes, burstVolume}
+        \State $fitur \gets \{\}$
+        \State $fitur[\text{totalBurst}] \gets \Call{Length}{counts}$
+        \State $s1 \gets \Call{CalcStats}{counts}$
+        \State $s2 \gets \Call{CalcStats}{volumes}$
+        \State $s3 \gets \Call{CalcStats}{durations}$
+        \State $s4 \gets \Call{CalcStats}{idles}$
+        \State $fitur \gets \Call{Gabung}{fitur, s1, s2, s3, s4}$
+        \State \Return $fitur$
+    \EndFunction
+\end{algorithmic}
+\end{algorithm}
 \captionsetup{font=small}
 \caption{Pseudocode untuk Ekstraksi Komponen $\gamma$ (Statistik Level Burst).}
 \label{lst:pseudo_gamma}
