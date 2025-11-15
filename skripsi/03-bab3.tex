@@ -1,1051 +1,1227 @@
 %-----------------------------------------------------------------------------%
 \chapter{\babTiga}
 \label{cha:perancangansistem}
-Bab ini menyajikan langkah-langkah rekayasa teknis yang dilakukan untuk mewujudkan sistem terpadu D’Office. 
-Proses dimulai dari Analisis Kebutuhan Fungsional menggunakan \textit{Use Case Diagram} untuk memetakan interaksi antara aktor dan sistem, kemudian berlanjut ke Perancangan Sistem dan Alur Kerja melalui \textit{Flowchart}, \textit{Activity Diagram}, dan \textit{Sequence Diagram} guna memperjelas alur logika dan pertukaran informasi. 
-Selanjutnya, pada tahap Implementasi Sistem D’Office, rancangan konseptual diterjemahkan ke perangkat lunak nyata dengan arsitektur \textit{MVC}, diagram kelas, dan kode program. 
-Selain itu, penelitian ini juga menghasilkan Templat Penulisan Tugas Akhir dalam format \LaTeX{} dan Microsoft Word untuk memudahkan penyusunan naskah sesuai pedoman resmi. 
-Bab ini ditutup dengan pembahasan Manajemen Proyek, yang menyoroti perencanaan, penjadwalan, dan pemantauan progres, sehingga memberikan gambaran menyeluruh dari analisis hingga produk akhir siap digunakan.
 
-\section{Analisis Kebutuhan Fungsional}
-\label{sec:analisis_kebutuhan}
-Tahap pertama dalam perancangan sistem adalah menerjemahkan alur kerja bisnis yang telah dipaparkan pada Seksi~\ref{sec:alur_kerja} ke dalam serangkaian kebutuhan fungsional yang konkret. 
-Kebutuhan fungsional mendefinisikan interaksi spesifik antara pengguna dan sistem. 
-Untuk memodelkan kebutuhan ini, digunakan pendekatan \textit{Use-Case} yang dipopulerkan dalam \ac{UML} \citep{Booch:2005}.
+\section{Pemilihan dan Pra-Pemrosesan Dataset ISCX 2016}
 
-Diagram \textit{Use-Case} pada Gambar~\ref{fig:use-case} memetakan para aktor utama---yaitu Mahasiswa, Dosen, dan Sekretariat Departemen---dengan fungsionalitas-fungsionalitas utama (kasus penggunaan) yang disediakan oleh sistem D'Office.
+\subsection{Deskripsi Dataset ISCX 2016}
+Dataset ISCXVPN2016 merupakan dataset yang paling populer dan banyak digunakan dalam penelitian klasifikasi lalu lintas jaringan terenkripsi, khususnya untuk membedakan trafik VPN dan Non-VPN \citep{DraperGil2016, razooqi2025vpn}. Dataset ini berisi trafik nyata dari berbagai aplikasi populer yang dikategorikan ke dalam tiga tugas klasifikasi utama: enkapsulasi (encapsulation), kategori aplikasi, dan aplikasi spesifik. Tugas enkapsulasi membedakan antara trafik VPN dan Non-VPN, kategori aplikasi mengelompokkan trafik berdasarkan jenis layanan seperti chat, email, streaming, transfer file, peer-to-peer, dan VoIP, sedangkan tugas aplikasi menentukan aplikasi spesifik yang menghasilkan trafik tersebut dengan total 16 kelas aplikasi \citep{park2024fast}.
 
-\begin{figure}[H]
+Tabel \ref{tab:dataset_distribution} menunjukkan distribusi kelas pada ketiga tugas klasifikasi dalam dataset ISCXVPN2016.
+
+\begin{table}[h]
     \centering
-    \resizebox{0.9\textwidth}{!}{
-    \begin{tikzpicture}
-        \begin{umlsystem}{Sistem D'Office}
-            % Daftar Use Case di dalam sistem (dengan revisi)
-            \umlusecase[name=ucAjuan, x=0, y=10]{Mengajukan Judul \& Pembimbing}
-            \umlusecase[name=ucSetuju, x=0, y=7]{Menyetujui/Menolak Permintaan Bimbingan}
-            \umlusecase[name=ucTetapkan, x=0, y=5.5]{Menetapkan Bimbingan}
-            \umlusecase[name=ucUnggah, x=0, y=4]{Mengunggah Dokumen Sidang}
-            \umlusecase[name=ucTemplat, x=0, y=1]{Mengunduh Templat}
-            \umlusecase[name=ucBuatTemplat, x=0, y=-0.5]{Mengunggah Templat}
-            \umlusecase[name=ucNilai, x=0, y=-2]{Memberi Nilai \& Revisi}
-            \umlusecase[name=ucUnggahYud, x=0, y=-4]{Mengunggah Berkas Yudisium}
-            \umlusecase[name=ucVerif, x=0, y=-6]{Memverifikasi Berkas Yudisium}
-        \end{umlsystem}
-        
-        % Definisi Aktor (posisi disesuaikan)
-        \umlactor[x=-7, y=8]{Mahasiswa}
-        \umlactor[x=7, y=5]{Dosen}
-        \umlactor[x=7, y=-5]{Sekretariat}
-
-        % Hubungan Aktor dengan Use Case (dengan revisi)
-        \umlassoc{Mahasiswa}{ucAjuan}
-        \umlassoc{Mahasiswa}{ucUnggah}
-        \umlassoc{Mahasiswa}{ucTemplat}
-        \umlassoc{Mahasiswa}{ucUnggahYud}
-        
-        \umlassoc{Dosen}{ucSetuju}
-        \umlassoc{Dosen}{ucTemplat}
-        \umlassoc{Dosen}{ucNilai}
-
-        \umlassoc{Sekretariat}{ucTetapkan}
-        \umlassoc{Sekretariat}{ucBuatTemplat}
-        \umlassoc{Sekretariat}{ucVerif}
-    \end{tikzpicture}
-    }
-    %\captionsetup{font=small}
-    \caption{Diagram \textit{Use-Case} untuk fungsionalitas utama sistem D'Office.}
-    \label{fig:use-case}
-\end{figure}
-
-Dari diagram tersebut, dapat dilihat bahwa setiap aktor memiliki peran dan interaksi yang berbeda. 
-Mahasiswa mengawali proses dengan melakukan ``Pengajuan Judul \& Pembimbing'' kepada Dosen tujuan. 
-Dosen kemudian dapat ``Menyetujui/Menolak Prmintaan Bimbingan`` dari mahasiswa tersebut.  kemudian memiliki peran untuk ``Menyetujui/Menolak Bimbingan'' tersebut. 
-Lalu, Sekretariat berperan untuk secara formal ``Menetapkan Bimbingan'' yang telah disetujui Dosen ke dalam sistem. 
-Setelah proses pembimbingan berlangsung, Dosen juga memiliki peran evaluasi seperti ``Memberi Nilai \& Revisi''. 
-Sementara itu, Sekretariat juga memiliki peran administratif seperti ``Mengunggah Templat'' dan ``Memverifikasi Berkas Yudisium'' yang telah diunggah oleh Mahasiswa melalui tahapan ``Mengunggah Berkas Yudisium''. 
-Kasus penggunaan ``Mengunduh Templat'' dapat diakses oleh lebih dari satu aktor, menunjukkan adanya fungsionalitas bersama. 
-Diagram ini menjadi landasan untuk perancangan alur kerja dan antarmuka pada tahap selanjutnya.
-
-\section{Perancangan Sistem dan Alur Kerja}
-\label{sec:perancangan_sistem}
-Setelah kebutuhan fungsional sistem didefinisikan, tahap selanjutnya adalah merancang alur kerja dan interaksi sistem secara detail. 
-Perancangan pada bagian ini disajikan secara bertingkat, dimulai dari gambaran besar hingga ke detail teknis. 
-Pembahasan akan diawali dengan pemodelan logika sistem secara keseluruhan menggunakan Diagram Alir. 
-Selanjutnya, alur kerja akan dirinci dari sudut pandang interaksi antar aktor melalui Diagram Aktivitas. 
-Terakhir, interaksi spesifik antar komponen perangkat lunak untuk salah satu kasus penggunaan kunci akan dimodelkan menggunakan Diagram Urutan.
-
-\subsection{Perancangan Alur Sistem}
-\label{subsec:perancangan_alur}
-Perancangan sistem diawali dengan pemodelan alur logika utama dari awal hingga akhir. 
-Berbeda dengan Diagram Aktivitas yang berfokus pada interaksi aktor, Diagram Alir (\textit{Flowchart}) digunakan di sini untuk memvisualisasikan urutan langkah dan keputusan dari sudut pandang sistem secara prosedural. 
-Diagram Alir pada Gambar~\ref{fig:flowchart-sistem} memetakan keseluruhan proses yang ditangani oleh sistem D'Office, mulai dari pengajuan sidang hingga selesainya proses revisi.
-
-\begin{figure}[h!] % Menggunakan [H] dari paket float sesuai preferensi Anda
-    \centering
-    \resizebox{0.9\textwidth}{!}{
-\begin{tikzpicture}[
-    node distance=1cm and 1cm, 
-    every node/.style={font=\footnotesize},
-    % --- Definisi Style untuk Bentuk Flowchart ---
-    startstop/.style={rectangle, rounded corners, minimum width=3cm, minimum height=1cm, text centered, draw=black, fill=red!10},
-    io/.style={trapezium, trapezium left angle=70, trapezium right angle=110, minimum width=3cm, minimum height=1cm, text centered, draw=black, fill=blue!10},
-    process/.style={rectangle, minimum width=3cm, minimum height=1cm, text centered, draw=black, fill=green!10},
-    decision/.style={diamond, aspect=2, minimum width=2.5cm, minimum height=1cm, text centered, draw=black, fill=orange!10},
-    database/.style={cylinder, shape border rotate=90, aspect=0.4, draw, fill=yellow!20},
-    document/.style={rectangle, draw, fill=purple!10},
-    connector/.style={circle, draw, fill=gray!20, minimum size=0.8cm},
-    arrow/.style={thick,->,>=stealth}
-]
-    % --- Mendefinisikan Semua Node (Blok) ---
-    
-    % Kolom Kiri
-    \node (start)    [startstop]                                         {Mulai TA};
-    \node (io0)      [io, below=of start, text width=3cm]                {Mahasiswa Pengajuan Judul TA \& Bimbingan};
-    \node (dec00)     [decision, below=of io0]           {Dosen Setuju?};
-    \node (proc0)    [process, below=of dec00]                             {Sistem Menetapkan Bimbingan};
-    \node (db0)      [database, below=of proc0]            {Menyimpan Daftar Bimbingan};
-    \node (proc01)    [process, below=of db0]                             {Proses Bimbingan Berlangsung};
-    \node (dec0)     [decision, below=of proc01]           {Siap Sidang?};
-    \node (conn00)    [connector,below= of dec0]  {A};  
-    
-    \node (conn0)    [connector,right=5cm of start]                                         {A};
-    \node (io1)      [io, below=of conn0, text width=3cm]                {Menerima Draf TA \& Berkas Pengajuan Sidang};
-    \node (proc1)    [process, below=of io1]                             {Sistem Memvalidasi Berkas};
-    \node (dec1)     [decision, below=of proc1, yshift=-0.5cm]           {Berkas Valid?};
-    \node (db1)      [database, below=of dec1, yshift=-0.5cm]            {Menyimpan Berkas ke Basis Data};
-    \node (proc2)    [process, below=of db1, text width=4cm]                             {Mengirim Notifikasi ke Pembimbing};
-    \node (doc1)     [document, below=of proc2, text width=3.5cm]        {Menjadwalkan Sidang \& Mengirim Undangan via Email};
-    \node (conn1)    [connector, below=of doc1]                          {B};
-
-    % Kolom Kanan (dihubungkan oleh konektor)
-    \node (conn2)    [connector, right=5cm of conn0]                     {B};
-    \node (proc3)    [process, below=of conn2]                           {Sidang Dilaksanakan};
-    \node (io2)      [io, below=of proc3, text width=3cm]                {Menerima Input Nilai \& Catatan Revisi dari Penguji};
-    \node (db2)      [database, below=of io2]                            {Menyimpan Hasil Sidang};
-    \node (proc4)    [process, below=of db2, text width=4cm]                             {Sistem Menyediakan Revisi untuk Mahasiswa};
-    \node (io3)      [io, below=of proc4, text width=3cm]                {Menerima Unggahan Berkas Final Terevisi};
-    \node (dec2)     [decision, below=of io3]           {Berkas Valid?};
-    \node (stop)     [startstop, below=of dec2]                           {Selesai TA};
-
-    % --- Menghubungkan Semua Node dengan Panah ---
-    \draw [arrow] (start) -- (io0);
-    \draw [arrow] (io0) -- (dec00);
-    \draw [arrow] (dec00) -- node[pos=0.25,left]{Ya} (proc0);
-    \draw [arrow] (dec00.west) -- ++(-1,0) |- node[sloped, pos=0.25, above] {Tidak} (io0.west);
-    \draw [arrow] (proc0) -- (db0);
-    \draw [arrow] (db0) -- (proc01);
-    \draw [arrow] (proc01) -- (dec0);
-    \draw [arrow] (dec0) -- node[pos=0.25,left]{Ya} (conn00);
-    \draw [arrow] (dec0.west) -- ++(-1,0) |- node[sloped, pos=0.25, above] {Tidak} (proc01.west);
-    
-    \draw [arrow] (conn0) -- (io1);
-    \draw [arrow] (io1) -- (proc1);
-    \draw [arrow] (proc1) -- (dec1);
-    
-    % Jalur Keputusan 'Ya' dan 'Tidak'
-    \draw [arrow] (dec1) -- node[anchor=east, pos=0.25] {Ya} (db1);
-    \draw [arrow] (dec1.west) -- ++(-1,0) |- node[sloped, anchor=south, pos=0.25] {Tidak} (io1);
-    
-    \draw [arrow] (db1) -- (proc2);
-    \draw [arrow] (proc2) -- (doc1);
-    \draw [arrow] (doc1) -- (conn1);
-
-    \draw [arrow] (conn2) -- (proc3);
-    \draw [arrow] (proc3) -- (io2);
-    \draw [arrow] (io2) -- (db2);
-    \draw [arrow] (db2) -- (proc4);
-    \draw [arrow] (proc4) -- (io3);
-    \draw [arrow] (io3) -- (dec2);
-    % Jalur Keputusan 'Ya' dan 'Tidak'
-    \draw [arrow] (dec2) -- node[anchor=east, pos=0.25] {Ya} (stop);
-    \draw [arrow] (dec2.west) -- ++(-1,0) |- node[sloped, anchor=south, pos=0.25] {Tidak} (io3);
-\end{tikzpicture}
-}
-%\captionsetup{font=small}
-    \caption{Diagram Alir (\textit{Flowchart}) logika utama sistem D'Office.}
-    \label{fig:flowchart-sistem}
-\end{figure}
-
-Diagram alir pada Gambar~\ref{fig:flowchart-sistem} memvisualisasikan urutan logis dari proses utama yang dikelola oleh sistem D'Office. 
-Proses diawali pengajuan judul TA dan bimbingan yang dilakukan oleh mahasiswa. 
-Dosen akan menentukan apakah mereka menerima pengajuan tersebut atau tidak, sebelum ditetapkan oleh sekretariat. 
-Setelah daftar bimbingan ditetapkan dan disimpan dalam sistem, proses pembimbingan berlangsung antara dosen dengan mahasiswa tersebut. 
-Begitu dosen telah menyetujui mahasiswa bimbingan untuk maju sidang, maka mahasiswa mengajukan berkas sidang yang kemudian divalidasi oleh sistem. 
-Jika tidak valid, proses akan kembali meminta masukan dari mahasiswa. 
-Jika valid, sistem akan menyimpan berkas, memfasilitasi penjadwalan, dan mengirimkan notifikasi. 
-Setelah sidang dilaksanakan, sistem kembali berperan dalam menerima masukan revisi dari dewan penguji, menyediakannya untuk mahasiswa, hingga akhirnya menerima berkas final yang telah direvisi untuk menyelesaikan siklus.
-
-\subsection{Perancangan Proses Bisnis}
-\label{subsec:perancangan_proses}
-Untuk memberikan gambaran detail mengenai alur kerja sistem, proses utama dipecah menjadi tiga fase logis yang masing-masing diilustrasikan dengan Diagram Aktivitas. 
-Fase pertama mencakup proses dari pengajuan judul hingga persetujuan bimbingan. 
-Fase kedua fokus pada alur pra-sidang, dan fase ketiga menjelaskan alur pasca-sidang.
-
-\subsubsection{Diagram Aktivitas Pengajuan dan Proses Bimbingan}
-Diagram pada Gambar~\ref{fig:activity-bimbingan} menunjukkan alur kerja awal, mulai dari mahasiswa mengajukan judul hingga dosen pembimbing memberikan persetujuan untuk maju ke tahap sidang. 
-Fase ini melibatkan interaksi antara Mahasiswa, Dosen Pembimbing yang dituju, dan Sekretariat Departemen, yang difasilitasi oleh sistem D'Office.
-
-\begin{figure}[H]
-    \centering
-    \resizebox{\textwidth}{!}{
-    \begin{tikzpicture}[
-        node distance=0.5cm and 0.5cm,
-        actor/.style={rectangle, draw, font=\bfseries, minimum width=3cm},
-        startend/.style={circle, draw, fill=black, inner sep=2pt},
-        activity/.style={rectangle, draw, rounded corners, fill=blue!10, text width=8em, text centered, minimum height=3em},
-        decision/.style={diamond, draw, aspect=1.5, fill=orange!20, inner sep=1pt, text centered},
-        line/.style={draw, -Latex, thick}
-    ]
-        % Swimlanes
-        \node[actor] (mhs) {Mahasiswa};
-        \node[actor, right=2cm of mhs] (sistem) {Sistem D'Office};
-        \node[actor, right=2cm of sistem] (dosen) {Dosen Pembimbing};
-        \node[actor, left=2cm of mhs] (tendik) {Sekretariat};
-
-        % Garis pemisah swimlane
-        \draw[dashed] ($(tendik.east)!0.5!(mhs.west)$) -- +(0,-9);
-        \draw[dashed] ($(mhs.east)!0.5!(sistem.west)$) -- +(0,-9);
-        \draw[dashed] ($(sistem.east)!0.5!(dosen.west)$) -- +(0,-9);
-
-        % Alur Proses
-        \node[startend, below=1cm of mhs] (start) {};
-        \node[activity, below=of start] (ajuJudul) {Mengajukan Judul \& Calon Pembimbing};
-        \node[decision, yshift=-2cm] (setujuDosen) at (dosen |- ajuJudul) {Setujui Bimbingan?};
-        \node[activity,yshift=-3cm] (verifTendik) at (tendik |- setujuDosen) {Menetapkan Pembimbing Secara Formal};
-        \node[activity] (updateStatus) at (sistem |- verifTendik) {Memperbarui Status Pembimbingan};
-        \node[activity, yshift=-2.5cm] (bimbingan) at (mhs |- updateStatus) {Melakukan Bimbingan \& Mengisi Log};
-        \node[decision,yshift=-2cm] (accSidang) at (dosen |- bimbingan) {Naskah Siap Sidang?};
-        \node[startend, below=of accSidang] (end) {};
-
-        % Panah
-        \draw[line] (start) -- (ajuJudul);
-        \draw[line] (ajuJudul.east) -| (setujuDosen.north);
-        \draw[line] (setujuDosen.west) -- ++(-1cm,0) node[midway, below] {Tidak} -| (ajuJudul.south);
-        \draw[line] (setujuDosen.south) -- ++ (0,-0.3cm) node[right] {Ya} -| (verifTendik.north);
-        \draw[line] (verifTendik.east) -- (updateStatus.west);
-        \draw[line] (updateStatus.south) -- ++ (0,-0.4cm) -| (bimbingan.north);
-        \draw[line] (bimbingan.east) -| (accSidang.north);
-        \draw[line] (accSidang) -- node[right] {Ya} (end);
-        \draw[line] (accSidang.west) -- ++ (-2cm,0) node[midway, below] {Tidak, Revisi} -| (bimbingan.south) ;
-        
-    \end{tikzpicture}
-    }
-    %\captionsetup{font=small}
-    \caption{Diagram Aktivitas untuk proses pengajuan dan bimbingan.}
-    \label{fig:activity-bimbingan}
-\end{figure}
-
-Alur ini diawali oleh Mahasiswa yang mengajukan judul dan memilih calon pembimbing di D'Office. 
-Sistem kemudian meneruskan pengajuan ini kepada Dosen yang dituju untuk meminta persetujuan. 
-Jika dosen menolak, mahasiswa harus mengajukan ulang. 
-Jika disetujui, alur berlanjut ke Sekretariat untuk penetapan formal. 
-Setelah pembimbingan ditetapkan, siklus bimbingan iteratif antara Mahasiswa dan Dosen dimulai, di mana pengisian log bimbingan menjadi bagian dari proses. 
-Siklus ini berakhir ketika Dosen Pembimbing memberikan persetujuan bahwa naskah siap untuk diajukan ke sidang.
-
-\subsubsection{Diagram Aktivitas Pra-Sidang}
-Gambar~\ref{fig:activity-pra-sidang} menunjukkan alur kerja yang difasilitasi oleh D'Office mulai dari pengunggahan draf oleh mahasiswa hingga penjadwalan sidang oleh dosen pembimbing.
-
-\begin{figure}[H]
-    \centering
-    \resizebox{\textwidth}{!}{
-    \begin{tikzpicture}[
-        node distance=0.5cm and 0.5cm,
-        actor/.style={rectangle, draw, font=\bfseries, minimum width=3cm},
-        startend/.style={circle, draw, fill=black, inner sep=2pt},
-        activity/.style={rectangle, draw, rounded corners, fill=blue!10, text width=8em, text centered, minimum height=3em},
-        decision/.style={diamond, draw, aspect=1.5, fill=orange!20, inner sep=1pt, text centered},
-        line/.style={draw, -Latex, thick}
-    ]
-        % Swimlanes
-        \node[actor] (mhs) {Mahasiswa};
-        \node[actor, right=3.0cm of mhs] (sistem) {Sistem D'Office};
-        \node[actor, right=3.0cm of sistem] (dosen) {Dosen Pembimbing};
-        
-        % Garis pemisah swimlane
-        \draw[dashed] ($(mhs.east)!0.5!(sistem.west)$) -- +(0,-10);
-        \draw[dashed] ($(sistem.east)!0.5!(dosen.west)$) -- +(0,-10);
-
-        % Alur Proses
-        \node[startend, below=1cm of mhs] (start) {};
-        \node[activity, below=of start] (upload) {Mengunggah Draf \& Prasyarat};
-        \node[decision, below=1cm of upload -| sistem] (validasi) {Berkas Lengkap?};
-        \node[activity, below=of validasi] (notif) {Memberi Notifikasi ke Dosen};
-        \node[activity, below=6.3cm of dosen] (usul) {Mengajukan Jadwal \& Penguji};
-        \node[activity, below=1cm of usul -| sistem] (kirim) {Membuat \& Mengirim Undangan Sidang};
-        \node[activity, left=of validasi -| mhs] (revisiUpload) {Memperbaiki Unggahan};
-        \node[startend, below=of kirim] (end) {};
-        \node[coordinate, below=0.1cm of end] (to_next_diagram) {}; % Titik akhir menuju diagram selanjutnya
-
-        % Panah
-        \draw[line] (start) -- (upload);
-        \draw[line] (upload.east) -| (validasi.north);
-        \draw[line] (validasi) -- node[right, pos=0.2] {Ya} (notif);
-        \draw[line] (notif.east) -- (usul.west);
-        \draw[line] (usul.south) |- (kirim.east);
-        \draw[line] (kirim) -- node[right] {Sidang Dilaksanakan} (end);
-        \draw[line] (validasi.west) -- node[above] {Tidak} (revisiUpload.east);
-        \draw[line] (revisiUpload.north) |- (upload.west);
-    \end{tikzpicture}
-    }
-    %\captionsetup{font=small}
-    \caption{Diagram Aktivitas untuk proses pra-sidang.}
-    \label{fig:activity-pra-sidang}
-\end{figure}
-
-Alur pra-sidang dimulai oleh Mahasiswa yang mengunggah berkas. 
-Sistem D'Office kemudian memvalidasi kelengkapan berkas. 
-Jika tidak lengkap, alur dikembalikan ke mahasiswa. 
-Jika lengkap, sistem memberi notifikasi kepada Dosen Pembimbing, yang kemudian dapat menjadwalkan sidang dan mengusulkan penguji melalui sistem.
-
-\subsubsection{Diagram Aktivitas Pasca-Sidang}
-Setelah sidang dilaksanakan, proses revisi dan pengumpulan akhir dimulai. 
-Alur kerja ini, yang melibatkan aktivitas paralel dari Dosen Pembimbing dan Dosen Penguji, disajikan pada Gambar~\ref{fig:activity-pasca-sidang}.
-
-\begin{figure}[h!]
-    \centering
-    \resizebox{\textwidth}{!}{
-    \begin{tikzpicture}[
-        node distance=0.5cm and 0.5cm,
-        actor/.style={rectangle, draw, font=\bfseries, minimum width=3cm},
-        startend/.style={circle, draw, fill=black, inner sep=2pt},
-        activity/.style={rectangle, draw, rounded corners, fill=blue!10, text width=8em, text centered, minimum height=3em},
-        decision/.style={diamond, draw, aspect=1.5, fill=orange!20, inner sep=1pt, text centered},
-        line/.style={draw, -Latex, thick},
-        fork_v/.style={rectangle, draw, fill=black, minimum width=0.15cm, minimum height=4cm},
-        join_h/.style={rectangle, draw, fill=black, minimum width=6cm, minimum height=0.15cm}, % Join Horizontal
-    ]
-        % Swimlanes
-        \node[actor] (mhs) {Mahasiswa};
-        \node[actor, right=2cm of mhs] (sistem) {Sistem D'Office};
-        \node[actor, right=2cm of sistem] (pembimbing) {Dosen Pembimbing};
-        \node[actor, right=2cm of pembimbing] (penguji) {Dosen Penguji};
-        
-        % Garis pemisah swimlane
-        \draw[dashed] ($(mhs.east)!0.5!(sistem.west)$) -- +(0,-16);
-        \draw[dashed] ($(sistem.east)!0.5!(pembimbing.west)$) -- +(0,-16);
-        \draw[dashed] ($(pembimbing.east)!0.5!(penguji.west)$) -- +(0,-16);
-
-        % Alur Proses
-        \node[startend, below=1cm of mhs] (start) {};
-        \node[activity, below=of start] (sidang) {Pelaksanaan Sidang};
-        
-        % Fork Node (Vertikal)
-        \node[fork_v, below= of sistem] (fork) {};
-        
-        \node[activity, below=1.3cm of sidang -| pembimbing] (isiRevisiPembimbing) {Mengisi Nilai \& Revisi};
-        \node[activity, below=1.3cm of sidang -| penguji] (isiRevisiPenguji) {Mengisi Nilai \& Revisi};
-        
-        % Join Node (Vertikal)
-        \node[join_h, below=3.5cm of fork] (join) {};
-        
-        \node[activity, below=1cm of join] (sediaRevisi) {Menyediakan Catatan Revisi};
-        \node[activity, below=6.15cm of sidang] (kerjakanRevisi) {Mengerjakan Revisi \& Meminta TTD};
-        \node[activity, below=of kerjakanRevisi] (uploadFinal) {Mengunggah Buku Final};
-        \node[decision,yshift=-1.8cm] (validasi) at (sistem |- uploadFinal) {Berkas Lengkap?};
-        \node[startend, below=of validasi] (end) {};
-        
-        % Panah (Logika Baru yang Lebih Benar)
-        \draw[line] (start) -- (sidang);
-        % 1. Satu panah dari Sidang ke Fork
-        \draw[line] (sidang.east) |- (fork.west);
-        
-        % 2. Dua panah KELUAR dari Fork di titik berbeda (lebih ke bawah)
-        \draw[line] ($(fork.north east)!0.65!(fork.south east)$) -|(isiRevisiPembimbing.north);
-        \draw[line] ($(fork.north east)!0.35!(fork.south east)$) -| (isiRevisiPenguji.north);
-
-        % 3. Dua panah MASUK ke Join dengan dua tekukan
-        \draw[line] (isiRevisiPembimbing.south) -- ++(0,-0.5cm) -| ($(join.north west)!0.35!(join.north east)$);
-        \draw[line] (isiRevisiPenguji.south) -- ++(0,-1.5cm) -| ($(join.north west)!0.65!(join.north east)$);
-        
-        % 4. Satu panah KELUAR dari Join
-        \draw[line] (join.south) -- (sediaRevisi.north);
-        
-        \draw[line] (sediaRevisi.west) -- (kerjakanRevisi.east);
-        \draw[line] (kerjakanRevisi) -- (uploadFinal);
-        \draw[line] (uploadFinal.east) -| (validasi.north);
-        \draw[line] (validasi.south) -- node[pos=0.25,right]{Ya}(end);
-        \draw[line] (validasi.west) -- ++(-1cm,0) node[pos=0.25,below] {Tidak}  -|(uploadFinal.south);
-    \end{tikzpicture}
-    }
-    %\captionsetup{font=small}
-    \caption{Diagram Aktivitas untuk proses pasca-sidang dengan Fork/Join Node yang benar.}
-    \label{fig:activity-pasca-sidang}
-\end{figure}
-
-Alur pasca-sidang dimulai setelah sidang selesai. Baik Dosen Pembimbing maupun Dosen Penguji memasukkan nilai dan catatan revisi ke D'Office. Sistem kemudian menyediakan catatan tersebut kepada Mahasiswa, yang selanjutnya mengerjakan revisi dan meminta persetujuan (tanda tangan). Setelah semua disetujui, mahasiswa mengunggah versi final dari tugas akhirnya ke sistem.
-
-
-% Kode ini adalah kelanjutan dari sub-bab sebelumnya.
-% Pastikan Anda sudah memiliki `tikz-uml.sty` di direktori proyek Anda.
-
-\subsection{Perancangan Interaksi}
-\label{subsec:perancangan_interaksi}
-Setelah alur proses bisnis utama divisualisasikan melalui Diagram Aktivitas, langkah berikutnya adalah memodelkan bagaimana interaksi internal sistem terjadi untuk mewujudkan proses tersebut. Untuk tujuan ini digunakan Diagram Sekuens UML, yang menggambarkan komunikasi dinamis antar objek atau komponen perangkat lunak seiring waktu.
-
-Dalam konteks aplikasi D’Office, struktur internal sistem dirancang mengikuti pola arsitektur \ac{MVC}. Pola ini memungkinkan pemisahan tanggung jawab yang jelas antara pengelolaan data (\textit{Model}), penyajian antarmuka pengguna (\textit{View}), dan pengendali alur logika (\textit{Controller}). Berdasarkan arsitektur ini, perilaku dinamis sistem saat melayani pendaftaran sidang dapat divisualisasikan melalui Diagram Sekuens. Gambar~\ref{fig:sequence-diagram} memperlihatkan contoh Diagram Sekuens yang digunakan untuk melihat dinamika dari \textit{Use Case} ``Mengunggah Dokumen Sidang''.
-
-\begin{figure}[H]
-    \centering
-    \resizebox{\textwidth}{!}{
-    \begin{tikzpicture}[
-        % ... (definisi style lifeline, object, msg, ret_msg tetap sama) ...
-        y=-1.5cm, x=3.5cm,
-        lifeline/.style={draw, thick},
-        object/.style={rectangle, draw, rounded corners, fill=blue!10, minimum width=2.0cm, minimum height=0.8cm, text centered},
-        msg/.style={draw, -{Stealth[length=3mm]}},
-        ret_msg/.style={draw, dashed, -{Stealth[length=3mm]}}
-    ]
-        % 1. Gambar Objek dan Lifeline (Model diganti menjadi :Sidang)
-        \node[object] (mhs) at (0,0) {\footnotesize Mhs: Mahasiswa};
-        \node[object] (web) at (1,0) {\footnotesize Web: Browser};
-        \node[object] (ctrl) at (2,0) {\footnotesize Controller: SidangController};
-        \node[object] (model) at (3,0) {\footnotesize Model: Sidang};
-        \node[object] (db) at (4,0) {\footnotesize DB: Database};
-
-        \foreach \obj in {mhs, web, ctrl, model, db}
-        {
-            \draw[lifeline] (\obj.south) -- (\obj.south |- 0,9);
-        }
-
-        % 2. Gambar Pesan (disesuaikan dengan metode di Class Diagram)
-        \draw[msg] (0,1) -- (1,1) node[midway, above, font=\small] {1: \texttt{klikSubmit}()};
-        \draw[msg] (1,2) -- (1.9,2) node[midway, above, font=\small] {2: \texttt{store(request)}};
-        % Validasi oleh SidangStoreRequest terjadi secara implisit di sini
-        
-        \draw[msg] (2,3.5) -- (2.9,3.5) node[pos=0.7, above, font=\footnotesize] {3: \texttt{new Sidang(data)}};
-        \draw[msg] (2,4.5) -- (2.9,4.5) node[midway, above, font=\small] {4: \texttt{save()}};
-        \draw[msg] (3,5.5) -- (3.9,5.5) node[pos=0.85, above, font=\footnotesize] {5: \texttt{INSERT INTO sidangs ...}};
-        \draw[ret_msg] (4,6) -- (3.1,6);
-        \draw[ret_msg] (3,6.5) -- (2.1,6.5);
-        \draw[ret_msg] (2,7.5) -- (1,7.5) node[midway, above, font=\small] {6: \texttt{redirect('sukses')}};
-        \draw[msg] (1,8.5) -- (0,8.5) node[midway, above, font=\small] {7: \texttt{tampilkanSukses()}};
-
-        % 3. Gambar Balok Aktivasi
-        \filldraw[fill=gray!20] (2-0.1, 2) rectangle (2+0.1, 7.5);
-        \filldraw[fill=gray!20] (3-0.1, 3.5) rectangle (3+0.1, 6.5);
-        \filldraw[fill=gray!20] (4-0.1, 5.5) rectangle (4+0.1, 6);
-    \end{tikzpicture}
-    }
-    %\captionsetup{font=small}
-    \caption{Diagram Urutan yang disinkronkan dengan Diagram Kelas.}
-    \label{fig:sequence-diagram}
-\end{figure}
-
-Alur interaksi ini dapat dijelaskan sebagai berikut: (1) Proses diawali oleh Mahasiswa yang menekan \texttt{klikSubmit}. 
-(2) Peramban (\textit{browser}) mengirimkan data ke metode \texttt{store(request)} pada SidangController. 
-(3-4) Jika berkas valid, \textit{Controller} membuat instansiasi objek \texttt{Sidang} baru dan memanggil metode \texttt{save()} padanya. 
-(5) Metode \texttt{save()} kemudian menerjemahkan aksi ini menjadi kueri \texttt{INSERT} ke Basis Data (\textit{Database}). 
-(6-7) Setelah berhasil, \textit{Controller} mengirimkan respons kembali ke peramban (\textit{Browser}) untuk menampilkan halaman sukses kepada Mahasiswa. 
-
-\section{Implementasi Sistem D'Office}
-\label{sec:implementasi}
-Tahap implementasi adalah proses penerjemahan semua hasil analisis dan perancangan yang telah dibahas sebelumnya ke dalam wujud produk fungsional. 
-Bagian ini akan menguraikan lingkungan pengembangan yang digunakan, detail implementasi dari salah satu fitur kunci sistem D'Office, serta proses pengembangan templat penulisan. 
-Selain itu, arsitektur sistem dan perangkat lunak yang mendasari implementasi juga dijabarkan untuk memberikan gambaran struktur internal aplikasi.
-
-\subsection{Lingkungan Pengembangan}
-\label{subsec:lingkungan_pengembangan}
-Untuk memastikan proses pengembangan berjalan dengan lancar dan konsisten, digunakan serangkaian perangkat keras dan perangkat lunak yang terstandarisasi. 
-Komponen-komponen utama dari lingkungan pengembangan diilustrasikan pada Gambar~\ref{fig:lingkungan-dev}, dengan spesifikasi detailnya dirangkum pada Tabel~\ref{tab:spesifikasi-dev}.
-
-
-\begin{figure}[h!]
-    \centering
-    \resizebox{\textwidth}{!}{
-    \begin{tikzpicture}[
-        node distance=1cm and 1.5cm,
-        auto,
-        main/.style={rectangle, draw, fill=none, draw=none, text width=5em, text centered, minimum height=1.7cm},
-        tool/.style={rectangle, draw, rounded corners, fill=gray!10, text centered}
-    ]
-    \begin{scope}[scale=0.3, transform shape]
-        \pic {my pc};
-        \node (pc1) at (0,0) {}; % Node jangkar yang bisa dirujuk
-    \end{scope}
-
-    \node[main] (env) {};
-    \node[below=0.4cm of pc1.north, text width=9em, text centered] {\textbf{Lingkungan Pengembangan}};
-    
-    \node[tool, above left=of env] (php) {PHP 8.1};
-    \node[tool, above right=of env] (laravel) {Laravel 9.x};
-    \node[tool, right=of laravel] (composer) {Composer};
-    \node[tool, below right=of env] (git) {Git \& GitHub};
-    \node[tool, below left=of env] (vscode) {VS Code};
-    \node[tool, left=of php] (laragon) {Laragon};
-    \node[tool, above=of env] (mysql) {MySQL};
-    \draw[-o] (env.north west) -- (php.south);
-    \draw[-o] (env.north east) -- (laravel.south);
-    \draw[-o] (laravel.east) -- (composer.west);
-    \draw[-o] (env.south west) -- (vscode.north);
-    \draw[-o] (env.south east) -- (git.north);
-    \draw[-o] (php.west) -- (laragon.east);
-    \draw[-o] (env.north) -- (mysql.south);
-\end{tikzpicture}
-}
-%\captionsetup{font=small}
-\caption{Komponen utama dalam lingkungan pengembangan proyek.}
-\label{fig:lingkungan-dev}
-\end{figure}
-
-
-\begin{table}[h!]
-    \centering
-    \captionsetup{justification=justified,singlelinecheck=false}
-    \caption{Spesifikasi perangkat keras dan perangkat lunak.}
-    \label{tab:spesifikasi-dev}
-    \begin{tabularx}{\linewidth}{|l|l|X|}
-        \hline
-        \textbf{Kategori} & \textbf{Komponen} & \textbf{Spesifikasi} \\
-        \hline
-        \multirow{4}{*}{\textbf{Perangkat Keras}} & Prosesor & Intel Core i5 atau setara \cite{intel_i5} \\
-        \cline{2-3}
-        & RAM & 8 GB \cite{ram_generic} \\
-        \cline{2-3}
-        & Penyimpanan & 256 GB SSD \cite{ssd_generic} \\
-        \cline{2-3}
-        & Sistem Operasi & Windows 11 \cite{windows11} \\
-        \hline
-        \multirow{8}{*}{\textbf{Perangkat Lunak}} & Server Lokal & Laragon (Apache, MySQL, PHP) \cite{laragon} \\
-        \cline{2-3}
-        & Bahasa & PHP versi 8.1 \cite{php8} \\
-        \cline{2-3}
-        & Kerangka Kerja & Laravel versi 9.x \cite{laravel9} \\
-        \cline{2-3}
-        & Dependency Manager & Composer \cite{composer} \\
-        \cline{2-3}
-        & Basis Data & MySQL \cite{mysql} \\
-        \cline{2-3}
-        & Editor Kode & Visual Studio Code \cite{vscode} \\
-        \cline{2-3}
-        & Kontrol Versi & Git \& GitHub \cite{git} \\
-        \hline
+    \caption{Distribusi Kelas pada Dataset ISCXVPN2016 \citep{park2024fast}}
+    \label{tab:dataset_distribution}
+    \setlength{\tabcolsep}{6pt} % mengurangi jarak antar kolom
+    \renewcommand{\arraystretch}{1.2} % sedikit longgar untuk keterbacaan
+    \begin{tabularx}{\linewidth}{lX}
+        \toprule
+        \textbf{Tugas} & \textbf{Kelas} \\
+        \midrule
+        Enkapsulasi (2 kelas) & VPN, Non-VPN \\
+        Kategori (6 kelas) & Chat, Email, Streaming, File Transfer, P2P, VoIP \\
+        Aplikasi (16 kelas) & Skype, ICQ, Hangout, Facebook, Email, Gmail, FTP, SCP, SFTP, Netflix, Spotify, Vimeo, YouTube, AIM Chat, VOIPBuster, BitTorrent \\
+        \bottomrule
     \end{tabularx}
 \end{table}
 
-Justifikasi untuk pemilihan perangkat keras yang tercantum pada Tabel~\ref{tab:spesifikasi-dev} adalah karena spesifikasi tersebut merupakan standar industri untuk pengembangan aplikasi web modern. 
-Prosesor Intel Core i5, RAM 8 GB, dan penyimpanan berbasis \ac{SSD} menjamin kinerja yang memadai untuk menjalankan \textit{server} lokal, editor kode, dan beberapa aplikasi pendukung secara bersamaan tanpa mengalami kendala performa yang signifikan.
+Dengan tiga tingkat klasifikasi ini, dataset ISCXVPN2016 menyediakan kerangka kerja evaluasi yang komprehensif dan representatif untuk penelitian network traffic classification, terutama dalam konteks trafik terenkripsi yang semakin berkembang.
 
-Adapun justifikasi untuk pemilihan tumpukan teknologi (\textit{technology stack}) perangkat lunak didasarkan pada prinsip sumber terbuka (\textit{open-source}), kematangan ekosistem, dan kemudahan pengembangan. 
-PHP dipilih sebagai bahasa pemrograman sisi server karena sifatnya yang matang dan komunitas pengembang yang besar. 
-Untuk mempercepat proses, digunakan kerangka kerja Laravel yang menerapkan pola arsitektur MVC secara elegan dan memiliki fitur bawaan yang sangat kaya. 
-Untuk memudahkan manajemen dependensi, digunakan Composer sebagai pengelola pustaka yang telah menjadi standar de facto dalam ekosistem PHP modern. 
-Laragon dipilih sebagai server lokal karena menyatukan Apache, PHP, dan MySQL dalam satu paket ringan yang mudah dikonfigurasi. 
-MySQL dipilih sebagai sistem manajemen basis data karena merupakan standar industri yang andal dan terintegrasi dengan baik dalam ekosistem PHP. 
-Terakhir, Visual Studio Code dan Git digunakan sebagai editor kode dan sistem kontrol versi karena keduanya merupakan standar industri yang ringan, fleksibel, dan efisien.
+\subsection{Pra-Pemrosesan Dataset ISCX 2016}
+\label{subsec:prapemrosesan}
 
-Dengan perangkat keras dan perangkat lunak yang telah dijabarkan, proses implementasi dapat dilakukan secara konsisten sesuai standar industri. 
-Tahap berikutnya adalah menjelaskan bagaimana komponen tersebut diorganisasikan ke dalam pola arsitektur perangkat lunak. 
-Untuk itu, sistem D'Office dirancang dengan mengikuti prinsip \textit{three-tier architecture} yang membagi tanggung jawab ke dalam lapisan presentasi, aplikasi, dan data. 
-Pola ini akan dijelaskan lebih rinci pada bagian berikut.
+Tujuan dari pra-pemrosesan dataset ISCX 2016 adalah untuk mengubah data mentah \texttt{.pcap}, yang berisi data level-paket, menjadi format \textit{flow-level} yang terstruktur dan bersih. Proses ini penting karena dataset aslinya, yang berisi sekitar 310.000 \textit{flow}, mengandung banyak trafik yang tidak relevan atau \textit{noise} yang dihasilkan oleh sistem operasi atau konfigurasi jaringan (seperti DNS, NBSS, LLMNR), bukan oleh aplikasi yang menjadi target analisis.
 
-\subsection{Arsitektur Tiga Lapis}
-\label{subsec:arsitektur_tiga_lapis}
-Arsitektur sistem D'Office dirancang dengan mengacu pada pola \textit{three-tier architecture}, yang telah dibahas secara konseptual pada Bab~\ref{cha:studiliteratur}. 
-Implementasi pola ini menghasilkan tiga lapisan utama yang memisahkan tanggung jawab sistem, yaitu \textit{Client Tier}, \textit{Application Tier}, dan \textit{Data Tier}. 
-Diagram implementasi pada Gambar~\ref{fig:deployment-diagram} memvisualisasikan bagaimana komponen perangkat lunak dipetakan ke dalam infrastruktur perangkat keras.
+Proses ini didasarkan pada metodologi yang diuraikan oleh \citep{park2024fast}, yang mengadopsi dan memperluas proses pembersihan dua tahap dari \citep{baek2023preprocessing}. Pra-pemrosesan ini terdiri dari tiga langkah utama:
 
-\begin{figure}[h!]
-    \centering
-    \resizebox{\textwidth}{!}{
-    \begin{tikzpicture}[
-        node distance=2cm and 4.5cm,
-        auto,
-        server/.style={
-            rectangle, draw, thick, fill=gray!20,
-            minimum width=3.5cm, minimum height=2.5cm,
-            align=center,
-            path picture={ 
-                \coordinate (L1) at (path picture bounding box.north west)++(0.2,-0.7);
-                \coordinate (R1) at (path picture bounding box.north east)++(-0.2,-0.7);
-                \draw[thin] (L1) -- (R1);       
-                \coordinate (L2) at (path picture bounding box.north west)++(0.2,-1.4);
-                \coordinate (R2) at (path picture bounding box.north east)++(-0.2,-1.4);
-                \draw[thin] (L2) -- (R2);
-                \fill[green!60!black] (path picture bounding box.south west)++(0.3,0.3) circle (2pt);
-            }
-        },
-        client/.style={circle, draw, thick, fill=blue!10, minimum size=1.5cm},
-        artifact/.style={
-            rectangle, draw, fill=blue!10,
-            text width=3cm, text centered, font=\small
-        },
-        line/.style={draw, -{Stealth[length=3mm]}, thick}
+\medskip
+\noindent\textbf{1. Konversi Paket-ke-Flow (menggunakan SplitCap)} \\
+Langkah pertama adalah mengubah file \texttt{.pcap} mentah menjadi \textit{bidirectional flows} (sesi). Konversi ini krusial karena analisis level \textit{flow} (konversasi utuh) memberikan konteks yang jauh lebih kaya daripada analisis level paket (kata-kata individual). Analisis \textit{flow} juga memungkinkan ekstraksi fitur statistik yang lebih bermakna (misalnya, durasi \textit{flow}, total byte, waktu antar-paket) yang esensial untuk membedakan trafik terenkripsi tanpa perlu menginspeksi \textit{payload}.
+
+Untuk tugas ini, \textit{tool} SplitCap digunakan. SplitCap dipilih karena merupakan \textit{tool} khusus yang teroptimasi (ditulis dalam C/C++) untuk menangani file \texttt{.pcap} besar secara efisien dan akurat dalam mengelola sesi, yang esensial untuk mereproduksi metodologi penelitian.
+
+Untuk mengotomatisasi pemrosesan pada seluruh dataset, sebuah skrip Python digunakan untuk memanggil SplitCap pada setiap file \texttt{.pcap}, seperti yang ditunjukkan pada Listing~\ref{lst:splitcap_automation}. Perlu dicatat penambahan argumen \texttt{-p 500} yang penting untuk membatasi sesi paralel dan menghindari galat ``Too many open files''.
+
+\begin{listing}[H]
+\setstretch{1}
+\begin{minted}[fontsize=\footnotesize, linenos]{python}
+def run_splitcap(pcap_file_path, output_dir):
+    """Constructs and runs the SplitCap command for a single pcap file.
+    Splits the file into bidirectional flows (sessions).
+
+    UPDATED: Includes the -p argument to limit parallel file handles.
+    """
+    # From the documentation, the argument for bidirectional flows is 'session'
+    split_argument = 'session'
+
+    # Set a limit for parallel sessions to prevent "Too many open files" error
+    parallel_sessions_limit = '500'
+
+    # The command to execute in WSL
+    command = [
+        'mono',
+        SPLITCAP_EXECUTABLE,
+        '-r', pcap_file_path,
+        '-o', output_dir,
+        '-s', split_argument,
+        '-p', parallel_sessions_limit  # <-- THIS IS THE NEW ARGUMENT
     ]
-        % Node perangkat keras
-        \node[server] (webserver) {\textbf{Application Server} \\ \texttt{srv-app-01.ee.ui.ac.id}};
-        \node[server, right=of webserver] (dbserver) {\textbf{Database Server} \\ \texttt{srv-db-01.ee.ui.ac.id}};
-        \node[client] (client) at ($(webserver.west)-(4.5,0)$) {Pengguna};
-        \node[below=2.5cm of client.north] (clientlabel){\textit{Client Tier}};
-        
-        % Artefak perangkat lunak
-        \node[artifact, below=0.1cm of webserver.north] (app) {Aplikasi Web D'Office};
-        \node at (app |- clientlabel) {\textit{Application Tier}};
-        \node[artifact, below=0.1cm of dbserver.north] (db) {MySQL Database};
-        \node at (db |- clientlabel) {\textit{Data Tier}};
 
-        % Hubungan/koneksi
-        \draw[line] (client) -- (webserver.west) node[midway, above, font=\small] {HTTP/HTTPS};
-        \draw[line, <->] (webserver.east) -- (dbserver.west) node[midway, above, font=\small] {Koneksi DB};
-        
-    \end{tikzpicture}
-    }
-    %\captionsetup{font=small}
-    \caption{Diagram Implementasi (\textit{Deployment Diagram}) arsitektur sistem D'Office.}
-    \label{fig:deployment-diagram}
-\end{figure}
+    print(f"-> Processing: {pcap_file_path}")
+    print(f"   Command: {' '.join(command)}")
 
-Secara rinci, Lapis pertama adalah \textit{Client Tier}, yang berupa peramban web di sisi pengguna. 
-Pada lapisan ini, pengguna berinteraksi dengan sistem melalui antarmuka aplikasi berbasis web. 
-Lapis kedua adalah \textit{Application Tier}, yang direalisasikan dengan sebuah \textit{Application Server} untuk menjalankan logika bisnis D'Office. 
-Semua aturan sistem, proses pengolahan data, serta mekanisme otorisasi dijalankan pada lapisan ini. 
-Lapis ketiga adalah \textit{Data Tier}, yang berupa \textit{Database Server} terpisah untuk menyimpan data secara persisten menggunakan MySQL. 
-Pemisahan antara server aplikasi dan server basis data diterapkan untuk meningkatkan keamanan, kinerja, serta skalabilitas, karena beban kerja keduanya ditangani oleh mesin yang berbeda. 
+    try:
+        # Execute the command
+        result = subprocess.run(
+            command,
+            check=True,       # Raises exception if command fails
+            capture_output=True,
+            text=True
+        )
+        print(f"   Success! Output saved to: {output_dir}")
 
-Dengan desain tiga lapis tersebut, fokus penelitian selanjutnya adalah lapisan aplikasi (\textit{Application Tier}). Untuk menjelaskan bagaimana perangkat lunak di dalam lapisan ini diorganisasikan, pembahasan dilanjutkan pada subseksi~\ref{subsec:arsitektur_perangkat_lunak}, yang mencakup pola \ac{MVC}, perancangan basis data, serta pemodelan diagram UML yang relevan.
+    except FileNotFoundError:
+        print("\n [ERROR] 'mono' command not found.")
+        print("Please ensure Mono is installed...")
+        return False
 
-\subsection{Arsitektur Perangkat Lunak}
-\label{subsec:arsitektur_perangkat_lunak}
+    except subprocess.CalledProcessError as e:
+        print(f"\n [ERROR] SplitCap failed for file: {pcap_file_path}")
+        print(f"   Return Code: {e.returncode}")
+        print(f"   Error Output:\n{e.stderr}")
+        return False
 
-Arsitektur perangkat lunak D'Office difokuskan pada \textit{Application Tier} dari pola tiga lapis (\textit{three-tier architecture}) yang telah diuraikan pada Subseksi~\ref{subsec:arsitektur_tiga_lapis}. 
-Jika arsitektur tiga lapis sebelumnya menggambarkan pemisahan komponen pada tingkat sistem (antara klien, server aplikasi, dan server basis data), maka pembahasan di bagian ini menyoroti bagaimana \textit{Application Tier} direalisasikan dalam bentuk perangkat lunak. 
+    return True
+\end{minted}
+\captionsetup{font=small}
+\caption{Skrip Python untuk otomatisasi konversi \texttt{.pcap} ke \textit{flow} menggunakan SplitCap.}
+\label{lst:splitcap_automation}
+\end{listing}
 
-Pada lapisan aplikasi inilah perangkat lunak dirancang dengan pemisahan tanggung jawab yang jelas, sehingga sistem lebih mudah dipelihara, diperluas, dan diuji. 
-Secara konseptual, pembahasan dimulai dari pola \ac{MVC} yang menjadi kerangka organisasi utama logika aplikasi. 
-Selanjutnya, diturunkan ke aspek perancangan basis data yang mendukung komponen \textit{Model} agar mampu beroperasi konsisten dengan kebutuhan sistem. 
-Terakhir, desain ini diformalkan melalui pemodelan dengan notasi UML, baik berupa \textit{Sequence Diagram} untuk interaksi dinamis maupun \textit{Class Diagram} untuk struktur statis perangkat lunak. 
+\medskip
+\noindent\textbf{2. Pembersihan Awal (Rule A \& B)} \\
+Setelah semua \texttt{.pcap} dikonversi menjadi \textit{flow} (total $\sim$310.000), proses pembersihan dua tahap yang diadopsi dari \citep{baek2023preprocessing} diterapkan:
+\begin{enumerate}
+    \item \textbf{Penghapusan Flow Berbasis Protokol (Rule A):} \textit{Flow} yang menggunakan protokol yang tidak relevan dengan aplikasi pengguna, seperti DNS, NBSS, dan LLMNR, dihapus.
+    \item \textbf{Verifikasi TCP 3-Way Handshake (Rule B):} \textit{Flow} TCP yang tidak memiliki 3-way handshake (SYN, SYN-ACK, ACK) lengkap di awal sesi akan dibuang. Ini memastikan bahwa hanya sesi TCP yang valid dan lengkap yang disimpan. Implementasi spesifiknya adalah menghapus \textit{flow} TCP dengan lebih dari 4 paket di mana paket pertamanya tidak memiliki \textit{flag} SYN.
+\end{enumerate}
 
-Pada arsitektur perangkat lunak D'Office, kerangka utama yang digunakan untuk mengatur logika aplikasi adalah pola \textit{Model-View-Controller} (MVC). Subsubseksi berikut menjelaskan implementasi pola MVC pada lapisan aplikasi, khususnya dengan memanfaatkan kerangka kerja Laravel.
+Setelah penerapan kedua aturan ini, jumlah \textit{flow} berkurang secara signifikan menjadi \textbf{29.195 \textit{flow}}.
 
-\subsubsection{Model-View-Controller (MVC) pada Lapisan Aplikasi}
-Pola MVC diimplementasikan menggunakan kerangka kerja Laravel yang secara sistematis mendukung pemisahan tanggung jawab dalam aplikasi web.
-Seperti diperlihatkan pada Gambar~\ref{fig:laravel-mvc},
-\texttt{Model} di Laravel diwujudkan melalui Eloquent ORM, yang memungkinkan representasi tabel basis data dalam bentuk kelas objek.
-\texttt{View} diimplementasikan melalui Blade Templating Engine, yang memisahkan antarmuka pengguna dari logika aplikasi.
-\texttt{Controller} berfungsi mengelola alur kerja aplikasi, termasuk memanggil \texttt{Model} dan \texttt{View} yang sesuai.
+\medskip
+\noindent\textbf{3. Penyaringan Tambahan (Rule C)} \\
+Langkah terakhir adalah penyaringan tambahan yang diimplementasikan oleh \citep{park2024fast} untuk menghilangkan \textit{flow} yang dianggap tidak penting untuk tujuan penelitian. Penyaringan ini (disebut Rule C) secara spesifik mencari dan menghapus \textit{flow} yang memenuhi \textit{semua} kriteria berikut:
+\begin{itemize}
+    \item Protokol adalah \textbf{UDP}.
+    \item Alamat IP tujuan adalah \textbf{\texttt{255.255.255.255}} (broadcast).
+    \item \textit{Payload} spam berisi string \textbf{\texttt{"Beacon\textasciitilde"}} \citep{park2024fast}.
+\end{itemize}
+
+\medskip
+\noindent\textbf{Implementasi Penyaringan (Rule A, B, dan C)} \\
+Ketiga aturan penyaringan (A, B, dan C) diimplementasikan dalam satu skrip Python menggunakan Scapy untuk membaca dan menganalisis setiap \textit{flow} \texttt{.pcap} satu per satu. Fungsi inti dari proses validasi ini ditunjukkan pada Listing~\ref{lst:scapy_filtering}.
+
+\begin{listing}[H]
+\setstretch{1}
+\begin{minted}[fontsize=\footnotesize, linenos]{python}
+def is_flow_valid_final(pcap_file_path):
+    """Analyzes a single flow pcap file and applies ALL filtering rules
+    (A, B, and C) to determine if it belongs in the final dataset.
+
+    Returns a tuple: (is_valid, reason_for_invalidation)
+    """
+    try:
+        packets = rdpcap(pcap_file_path)
+    except Exception as e:
+        return False, f"Scapy could not read file. Error: {e}"
+
+    if not packets:
+        return False, "File is empty or corrupt"
+
+    # --- Implement ALL Filtering Rules ---
+    first_packet = packets[0]
+
+    # Rule B: TCP 3-Way Handshake Check
+    if TCP in first_packet:
+        if len(packets) > 4 and 'S' not in first_packet[TCP].flags:
+            return False, "Rule B Failed: Invalid TCP handshake start"
+
+    # Loop through all packets to check Rules A and C
+    for pkt in packets:
+        # Rule A (Part 1): Disallowed protocols
+        for protocol_layer in DISALLOWED_PROTOCOLS:
+            if protocol_layer in pkt:
+                return False, f"Rule A Failed: Disallowed protocol ({protocol_layer.name})"
+
+        if UDP in pkt:
+            # Rule A (Part 2): Disallowed UDP ports
+            if pkt[UDP].sport in DISALLOWED_UDP_PORTS or pkt[UDP].dport in DISALLOWED_UDP_PORTS:
+                return False, "Rule A Failed: Disallowed UDP port used"
+
+            # Rule C: UDP Beacon Check
+            if IP in pkt and pkt[IP].dst == '255.255.255.255':
+                try:
+                    payload = bytes(pkt[UDP].payload)
+                    if b'Beacon~' in payload:
+                        return False, "Rule C Failed: UDP Beacon flow detected"
+                except Exception:
+                    pass
+
+    # If all checks passed, flow is valid
+    return True, "Valid"
+\end{minted}
+\captionsetup{font=small}
+\caption{Fungsi validasi \textit{flow} menggunakan Scapy untuk menerapkan Rule A, B, dan C.}
+\label{lst:scapy_filtering}
+\end{listing}
+
+Setelah ketiga langkah pra-pemrosesan ini selesai, dataset final yang bersih berisi total \textbf{13.487 \textit{flow}}. Dataset yang telah difilter secara ketat inilah yang kemudian digunakan untuk semua proses ekstraksi fitur dan pelatihan model selanjutnya dalam penelitian ini.
+
+\subsection{Pemilihan \textit{Sample} dari \textit{Flow} yang Telah Di-ekstrak}
+
+Setelah proses pra-pemrosesan di bagian \ref{subsec:prapemrosesan} selesai, didapatkan total \textbf{13.487 \textit{flow}} yang bersih. Analisis awal terhadap 13.487 \textit{flow} ini mengungkapkan adanya ketidakseimbangan kelas (\textit{class imbalance}) yang ekstrem pada dataset. Seperti yang ditunjukkan pada Gambar \ref{fig:full_dist_before}, beberapa aplikasi seperti \textit{Skype} memiliki 4.704 sampel, sementara \textit{ICQ} dan \textit{AIM Chat} hanya memiliki kurang dari 50 sampel. Ketidakseimbangan ini dapat menyebabkan model klasifikasi menjadi bias terhadap kelas mayoritas dan memiliki performa buruk pada kelas minoritas.
 
 \begin{figure}[H]
     \centering
-    \resizebox{\textwidth}{!}{
-    \begin{tikzpicture}[
-        component/.style={rectangle, draw, thick, fill=blue!10, text centered, minimum height=3em, minimum width=2cm},
-        arrow/.style={-Latex, thick}
-    ]
-        % Nodes
-        \node[component] (controller) {\texttt{Controller}};
-        \node[component, text width=3.5cm, above left=2cm and 0.5cm of controller] (view) {\texttt{View}\\(\textit{Blade Templates})};
-        \node[component, text width=3cm, above right=2cm and 0.5cm of controller] (model) {\texttt{Model}\\(\textit{Eloquent ORM})};
-        
-        % User and DB
-        \node[component, text width=2cm, left= of view] (user) {Pengguna (\textit{Browser})};
-        \node[component, text width=2cm, right= of model] (db) {Basis Data};
-        
-        % Connections
-        \draw[arrow] (view.west) -- (user.east) node[midway, above] {\scriptsize Response};
-        \draw[arrow] (user.south) |- (controller.west) node[midway, below] {\scriptsize Request};
-        
-        \draw[arrow] (controller.north west) -- (view.south east) node[sloped,midway, below]{\scriptsize Render};
-        \draw[arrow] ($(controller.north east)+(0.1cm,0)$) --  ($(model.south west)+(0.1cm,0)$);
-        \draw[arrow] ($(model.south west)+(-0.1cm,0)$) --  ($(controller.north east)+(-0.1cm,0)$);
-        \draw[arrow] ($(model.east)+(0,0.2cm)$) -- ($(db.west)+(0,0.2cm)$);
-        \draw[arrow] ($(db.west)-(0,0.2cm)$) -- ($(model.east)-(0,0.2cm)$);
-    \end{tikzpicture}
-    }
-    %\captionsetup{font=small}
-    \caption{Ilustrasi penerapan pola MVC pada Laravel.}
-    \label{fig:laravel-mvc}
-\end{figure}
-
-Selain memisahkan komponen aplikasi, Laravel juga menyediakan berbagai fitur untuk mempercepat pengembangan. 
-Salah satunya adalah sistem \textit{routing}, yang memetakan permintaan pengguna ke \textit{controller} yang sesuai sehingga alur logika aplikasi tetap konsisten. 
-Selain itu, Laravel mendukung penggunaan \textit{middleware} sebagai mekanisme penyaring permintaan, misalnya untuk autentikasi, otorisasi, atau perlindungan dari serangan keamanan umum.   
-
-\subsubsection{Perancangan Basis Data}
-\label{subsubsec:db-design}
-Selain pola MVC yang mengatur logika aplikasi, aspek lain yang sama pentingnya adalah rancangan basis data sebagai fondasi penyimpanan informasi pada \textit{data tier}. 
-Bagian ini menjelaskan perancangan skema tabel dan relasi yang mendasari entitas \texttt{Model} dalam kerangka kerja Laravel.
-Pada pola \ac{MVC} yang digunakan di lapisan aplikasi, komponen \texttt{Model} bertugas merepresentasikan data dalam bentuk kelas dan menyediakan mekanisme untuk mengakses maupun memanipulasinya. 
-Komponen ini tidak menyimpan data secara langsung, melainkan menjadi jembatan antara logika aplikasi dan lapisan penyimpanan data. 
-
-Sementara itu, pada arsitektur tiga lapis yang telah dibahas sebelumnya, basis data berada pada \textit{data tier} dan berfungsi sebagai tempat penyimpanan permanen seluruh informasi penting. Agar dapat mendukung kebutuhan aplikasi dan berintegrasi dengan baik melalui \texttt{Model}, diperlukan perancangan basis data yang terstruktur dalam bentuk skema relasional yang siap diimplementasikan.
-
-\paragraph{Skema Tabel.}
-Struktur basis data D’Office terdiri atas sejumlah tabel utama yang saling berhubungan. Tabel~\ref{tab:skema-tabel-final} merinci skema tabel kunci, yakni hanya sebagian skema dan tidak seluruhnya, dengan konvensi penulisan: kolom yang dicetak tebal menandakan \textit{primary key}, sedangkan kolom yang dicetak \textit{miring} menandakan \textit{foreign key}.
-
-\begin{table}[H]
-    \centering
-    \captionsetup{justification=justified,singlelinecheck=false}
-    \caption{Skema tabel utama basis data D'Office.}
-    \label{tab:skema-tabel-final}
-    \begin{tabularx}{\linewidth}{|l|X|}
-        \hline
-        \textbf{Nama Tabel} & \multicolumn{1}{c|}{ \textbf{Kolom dan Tipe Data}} \\
-        \hline
-        \texttt{mahasiswas} & \textbf{id} (PK), nama, npm (UNIQUE) \\
-        \hline
-        \texttt{dosens} & \textbf{id} (PK), nama, nip (UNIQUE) \\
-        \hline
-        \texttt{tugas\_akhirs} & \textbf{id} (PK), \textit{mahasiswa\_id} (FK), \textit{pembimbing\_id} (FK), judul, status \\
-        \hline
-        \texttt{sidangs} & \textbf{id} (PK), \textit{tugas\_akhir\_id} (FK), jadwal\_sidang, jenis \\
-        \hline
-        \texttt{dosen\_sidang} & \textbf{id} (PK), \textit{sidang\_id} (FK), \textit{dosen\_id} (FK), peran (\texttt{ketua}, \texttt{penguji}) \\
-        \hline
-    \end{tabularx}
-\end{table}
-
-\paragraph{Diagram Relasi.}
-Hubungan antar tabel divisualisasikan pada Gambar~\ref{fig:relationship-diagram-final}. 
-Diagram ini memperlihatkan bahwa relasi antara entitas tidak hanya satu-ke-satu, melainkan juga satu-ke-banyak dan banyak-ke-banyak, sehingga struktur basis data mampu merepresentasikan kompleksitas proses akademik.
-
-\begin{figure}[H]
-    \centering
-    \resizebox{\textwidth}{!}{
-    \begin{tikzpicture}[
-        table/.style={rectangle, draw, thick, fill=blue!10, minimum width=3.2cm, minimum height=1cm, align=center},
-        pivot/.style={table, fill=orange!20},
-        assoc/.style={draw, thick}
-    ]
-        % Definisi node tabel utama dan pivot
-        \node[table] (mahasiswas) {\texttt{mahasiswas}};
-        \node[table, right=4cm of mahasiswas] (tugas_akhirs) {\texttt{tugas\_akhirs}};
-        \node[table, above=2.5cm of tugas_akhirs] (dosens) {\texttt{dosens}};
-        \node[table, right=4cm of tugas_akhirs] (sidangs) {\texttt{sidangs}};
-        
-        \node[pivot] (dosen_sidang) at ($(dosens)!0.5!(sidangs)$) {\texttt{dosen\_sidang}};
-
-        % Garis relasi dengan kardinalitas
-        \draw[assoc] (mahasiswas.east) -- (tugas_akhirs.west)
-            node[near start, above, font=\small] {1}
-            node[near end, above, font=\small] {1};
-
-        \draw[assoc] (dosens.south) -- (tugas_akhirs.north)
-            node[near start, left, font=\small] {1}
-            node[near end, left, font=\small] {*}
-            node[midway, above, font=\small, sloped] {membimbing};
-
-        \draw[assoc] (tugas_akhirs.east) -- (sidangs.west)
-            node[near start, above, font=\small] {1}
-            node[near end, above, font=\small] {*};
-
-        \draw[assoc] (dosens.east) -| (dosen_sidang.north)
-            node[near start, above, font=\small] {1}
-            node[near end, left, font=\small] {*};
-        \draw[assoc] (dosen_sidang.east) -| (sidangs.north)
-            node[near start, above, font=\small] {1}
-            node[near end, right, font=\small] {*};
-    \end{tikzpicture}
-    }
-    %\captionsetup{font=small}
-    \caption{Diagram Relasi antar Tabel dengan Kardinalitas.}
-    \label{fig:relationship-diagram-final}
-\end{figure}
-
-Berdasarkan Gambar~\ref{fig:relationship-diagram-final}, setiap \texttt{tugas\_akhir} dimiliki oleh tepat satu \texttt{mahasiswa}, merepresentasikan hubungan satu-ke-satu (\textit{one-to-one}). 
-Hubungan antara \texttt{dosens} dan \texttt{tugas\_akhirs} (sebagai pembimbing) dimodelkan secara langsung sebagai satu-ke-banyak (\textit{one-to-many}). 
-Dengan demikian, satu tugas akhir hanya dapat memiliki satu pembimbing, dan satu dosen dapat membimbing banyak tugas akhir. 
-Demikian pula, sebuah \texttt{tugas\_akhir} dapat memiliki beberapa kali acara \texttt{sidang} (satu-ke-banyak), dan setiap sidang melibatkan banyak dosen (dengan peran berbeda), sehingga hubungan antara \texttt{dosens} dan \texttt{sidangs} juga dimodelkan sebagai banyak-ke-banyak melalui tabel \texttt{dosen\_sidang}. 
-Dengan demikian, desain ini tidak hanya menggambarkan struktur data pada \textit{data tier}, tetapi juga memastikan adanya korespondensi langsung antara tabel-tabel relasional dan entitas \texttt{Model} yang akan diimplementasikan pada lapisan logika aplikasi.
-
-Dengan rancangan basis data yang terstruktur ini, setiap entitas pada lapisan penyimpanan memiliki korespondensi langsung dengan komponen \texttt{Model}. Korespondensi ini kemudian menjadi dasar dalam pemodelan diagram kelas UML yang membahas interaksi antar entitas pada lapisan aplikasi.
-
-\subsubsection{Diagram Kelas}
-\label{subsubsec:class-diagram}
-Sebagaimana dijelaskan pada subseksi~\ref{subsec:perancangan_interaksi}, diagram sekuens pada Gambar~\ref{fig:sequence-diagram} telah digunakan untuk memodelkan alur dinamis pendaftaran sidang. Namun, agar arsitektur perangkat lunak dapat dipahami secara lebih lengkap, diperlukan pula representasi statis yang menggambarkan struktur kelas dan relasi antar komponen utama. Dalam konteks pola \ac{MVC} yang digunakan, diagram kelas berfungsi sebagai cetak biru perangkat lunak yang menekankan keterkaitan antara \textit{controller}, \textit{request validator}, dan \textit{model}.
-
-Gambar~\ref{fig:class-diagram} memperlihatkan diagram kelas untuk fungsionalitas pendaftaran sidang. Diagram ini menunjukkan bahwa \texttt{SidangController} bertugas menangani permintaan terkait proses pendaftaran sidang. Kelas ini memanfaatkan \texttt{SidangStoreRequest} untuk melakukan validasi data masukan, serta berinteraksi dengan \texttt{Sidang} sebagai model yang mewakili entitas sidang pada basis data. Objek \texttt{Sidang} sendiri memiliki asosiasi dengan \texttt{Mahasiswa}, yang merepresentasikan identitas pengguna dengan peran mahasiswa. Selain itu, \texttt{Sidang} diturunkan dari kelas dasar \texttt{Eloquent\textbackslash Model} yang disediakan oleh Laravel, sehingga memperoleh kemampuan bawaan untuk operasi basis data seperti \texttt{save()} dan \texttt{find()}.
-
-\begin{figure}[h!]
-    \centering
-    \resizebox{0.8\textwidth}{!}{
-    \begin{tikzpicture}[
-        node distance=1.5cm and 3cm,
-        class/.style={
-            rectangle split, rectangle split parts=3,
-            draw, fill=yellow!20, % Warna diubah menjadi kuning
-            text width=4.5cm, align=center, % Teks di-center untuk stereotype
-            font=\small
-        },
-        dep/.style={draw, dashed, -{Stealth[length=2mm]}},
-        assoc/.style={draw, thick},
-        inherit/.style={draw, thick, -{open triangle 60}} % Style untuk panah pewarisan
-    ]
-        % Definisi Node Class dengan gaya baru
-        \node[class] (controller) {
-            \textit{\guillemotleft class\guillemotright} \\
-            \textbf{SidangController}
-            \nodepart{second}
-                \raggedright % Rata kiri untuk atribut/metode
-                % Atribut (kosong)
-            \nodepart{third}
-                \raggedright
-                + store(request: SidangStoreRequest) \\
-                + update(request, sidang: Sidang)\\
-        };
-        
-        \node[class, right=of controller] (request) {
-            \textit{\guillemotleft class\guillemotright} \\
-            \textbf{SidangStoreRequest}
-            \nodepart{second}
-                \raggedright
-                % Atribut (kosong)
-            \nodepart{third}
-                \raggedright
-                + authorize(): bool \\
-                + rules(): array\\
-        };
-        
-        \node[class, below=of controller] (model) {
-            \textit{\guillemotleft class\guillemotright} \\
-            \textbf{Sidang}
-            \nodepart{second}
-                \raggedright
-                - mahasiswa\_id: int \\
-                - judul: string \\
-                - status: string\\
-            \nodepart{third}
-                \raggedright
-                + mahasiswa(): BelongsTo
-        };
-        
-        \node[class, right=of model] (mahasiswa) {
-            \textit{\guillemotleft class\guillemotright} \\
-            \textbf{Mahasiswa}
-            \nodepart{second}
-                \raggedright
-                - npm: string \\
-                - user\_id: int\\
-            \nodepart{third}
-                % Metode (kosong)
-        };
-
-        \node[class, text width=3cm, below=of model,yshift=2.5cm] (eloquent) at (0, -9) {
-            \textit{\guillemotleft class\guillemotright} \\
-            \textbf{\texttt{Eloquent\textbackslash Model}}
-            \nodepart{second}
-                % ...
-            \nodepart{third}
-                \raggedright
-                + save() \\
-                + find() \\
-                + ...\\
-        };
-
-        % Hubungan Antar Class (tetap sama)
-        \draw[dep] (controller) -- (request) node[midway, above] {\textit{\guillemotleft use\guillemotright}};
-        \draw[dep] (controller) -- (model) node[midway, above, sloped] {\textit{\guillemotleft use\guillemotright}};
-        \draw[assoc] (model) -- (mahasiswa) 
-            node[midway, above] {memiliki}
-            node[near start, below] {1}
-            node[near end, below] {*};
-        % Menambahkan panah pewarisan
-        \draw[inherit] (model) -- (eloquent);
-
-    \end{tikzpicture}
-    }
     \captionsetup{font=small}
-    \caption{Diagram Kelas (\textit{Class Diagram}) untuk fungsionalitas pendaftaran sidang.}
-    \label{fig:class-diagram}
+    \begin{subfigure}[b]{0.7\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{assets/pics/binary_dist.png}
+        \caption{Tugas Biner (13.487 flow)}
+    \end{subfigure}
+
+    \vspace{0.5em}
+
+    \begin{subfigure}[b]{0.7\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{assets/pics/category_dist.png}
+        \caption{Tugas Kategori (13.487 flow)}
+    \end{subfigure}
+
+    \vspace{0.5em}
+
+    \begin{subfigure}[b]{0.7\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{assets/pics/application_dist.png}
+        \caption{Tugas Aplikasi (13.487 flow)}
+    \end{subfigure}
+
+    \caption{Distribusi dataset penuh (13.487 flow) sebelum kurasi. Terlihat jelas adanya ketidakseimbangan kelas yang signifikan.}
+    \label{fig:full_dist_before}
 \end{figure}
 
-\subsection{Implementasi Fitur Kunci}
-\label{subsec:implementasi_fitur}
-Untuk memberikan gambaran konkret mengenai proses implementasi, sub-bab ini akan membedah salah satu fitur paling krusial dalam sistem D'Office, yaitu fungsi untuk menangani pengajuan pendaftaran sidang oleh mahasiswa. Fungsionalitas ini melibatkan validasi data, penanganan unggahan berkas (\textit{file upload}), dan penyimpanan informasi ke dalam basis data.
+Oleh karena itu, dilakukan langkah kurasi dataset untuk menciptakan dataset yang lebih seimbang untuk eksperimen. Dataset yang dikurasi ini (selanjutnya disebut Dataset v2) dirancang untuk memenuhi dua batasan utama:
+\begin{enumerate}
+    \item Untuk kesederhanaan, dataset akan berisi 6 kelas aplikasi yang paling representatif.
+    \item Untuk menjaga komparabilitas dengan penelitian lain \citep{park2024fast}, dataset harus mencakup \textit{semua} 6 kelas kategori (Chat, Email, File Transfer, P2P, Streaming, VoIP).
+\end{enumerate}
 
-Cuplikan pada Kode~\ref{lst:pendaftaran-sidang} menunjukkan metode \texttt{store()} di dalam kelas \texttt{SidangController}, yang ditulis dalam bahasa PHP menggunakan kerangka kerja Laravel. 
-Metode ini bertanggung jawab untuk memproses data yang dikirim dari formulir pendaftaran sidang. 
-Pertama, Laravel secara otomatis melakukan validasi data yang masuk menggunakan kelas \texttt{SidangStoreRequest}. 
-Jika data tidak valid, proses akan berhenti dan pengguna akan dikembalikan ke formulir dengan pesan eror. 
-Jika valid, proses berlanjut ke tahap kedua, yaitu penanganan berkas. 
-Fungsi \texttt{store()} digunakan untuk menyimpan berkas yang diunggah ke dalam direktori penyimpanan server dan mengembalikan lokasi uniknya. 
-Ketiga, sebuah entri baru dibuat pada tabel basis data \texttt{sidang} menggunakan \texttt{Eloquent} \textit{Model}, di mana semua data yang relevan (termasuk lokasi berkas) disimpan. 
-Terakhir, pengguna diarahkan kembali ke halaman utama pendaftaran sidang dengan sebuah pesan notifikasi bahwa pengajuan telah berhasil.
+Tantangannya adalah, jika hanya mengambil 6 aplikasi dengan jumlah sampel terbesar (misalnya \textit{Skype}, \textit{Email}, \textit{SCP}, \textit{VOIPBuster}, \textit{FTP}, \textit{Facebook}), batasan kedua tidak terpenuhi karena tidak ada perwakilan untuk kategori \textit{Streaming} dan \textit{P2P}.
 
-Lebih jauh, arsitektur yang diterapkan dalam metode ini mencerminkan praktik terbaik dalam pengembangan aplikasi web modern, terutama prinsip pemisahan tanggung jawab (\textit{separation of concerns}). 
-Penggunaan \texttt{SidangStoreRequest} secara efektif memisahkan logika validasi dari logika bisnis utama di dalam controller. 
-Hal ini membuat \texttt{SidangController} lebih ramping, bersih, dan fokus hanya pada tugasnya: mengorkestrasi penyimpanan berkas dan pencatatan data ke basis data. 
-Pemanfaatan \ac{ORM} juga merupakan poin penting, karena ia mengabstraksi interaksi dengan basis data. 
-Alih-alih menulis kueri SQL mentah yang rentan terhadap SQL injection, pengembang dapat berinteraksi dengan basis data melalui objek PHP yang intuitif, sehingga meningkatkan keamanan dan kemudahan pemeliharaan kode. 
-Terakhir, penggunaan \texttt{redirect()->route(...)} setelah operasi berhasil adalah implementasi dari pola desain \ac{PRG}, yang mencegah pengiriman formulir ganda jika pengguna menyegarkan halaman setelah pengajuan. 
+Solusinya adalah melakukan proses \textit{pick-and-choose} dengan memilih 6 aplikasi yang dapat menjadi ``perwakilan'' dengan jumlah sampel terbesar untuk \textit{setiap} kategori. Aplikasi yang terpilih adalah:
+\begin{itemize}
+    \item \textbf{Skype} (4.704 flow): Perwakilan terbesar untuk Chat, VoIP, dan File Transfer.
+    \item \textbf{Email} (1.901 flow): Perwakilan terbesar untuk Email.
+    \item \textbf{SCP} (1.741 flow): Perwakilan terbesar kedua untuk File Transfer.
+    \item \textbf{VOIPBuster} (1.196 flow): Perwakilan terbesar untuk VoIP-saja.
+    \item \textbf{YouTube} (379 flow): Perwakilan terbesar untuk Streaming.
+    \item \textbf{BitTorrent} (363 flow): Satu-satunya perwakilan untuk P2P.
+\end{itemize}
+
+Proses \textit{pick-and-choose} ini menghasilkan Dataset v2 dengan total \textbf{10.284 \textit{flow}}. Proses penyaringan ini diimplementasikan dengan skrip Python yang membaca 13.487 \textit{flow} dari direktori sumber dan hanya menyalin \textit{flow} yang termasuk dalam 6 aplikasi target ke direktori tujuan. Logika inti dari skrip penyaringan ditunjukkan pada Listing \ref{lst:filter_v2_pseudo}.
+
+\begin{listing}[H]
+\setstretch{1}
+\begin{minted}[fontsize=\footnotesize, linenos, breaklines]{text}
+Dataset v2 Filter (13,487 → 10,284)
+-----------------------------------
+Input: SRC, DST, KEYWORD_MAP, TARGET_APPS = {Skype, Email, SCP, VOIPBuster, YouTube, BitTorrent}
+
+filter_dataset():
+    files = listdir(SRC) or fatal("read error")
+    cnt = {copied:0, skipped:0}
+    
+    for f in files:
+        app = next((a for k,(a,_) in KEYWORD_MAP if k in f.lower()), None)
+        if app in TARGET_APPS: copy(SRC+f, DST+f); cnt.copied++
+        else: cnt.skipped++
+    
+    Print(f"Copied: {cnt.copied}, Skipped: {cnt.skipped}")
+    Print("SUCCESS" if cnt.copied == 10284 else "WARNING: mismatch")
+
+Main:
+    if __name__ == "__main__":
+        filter_dataset()
+\end{minted}
+\captionsetup{font=small}
+\caption{Pseudocode dari logika inti skrip Python untuk memfilter 13.487 \textit{flow} bersih menjadi Dataset v2 (10.284 \textit{flow}) berdasarkan 6 aplikasi yang telah ditentukan.}
+\label{lst:filter_v2_pseudo}
+\end{listing}
+
+Setelah proses kurasi ini selesai, distribusi kelas pada Dataset v2 (10.284 \textit{flow}) menjadi lebih seimbang, meskipun masih menunjukkan ketidakseimbangan yang wajar, seperti terlihat pada Gambar \ref{fig:v2_dist_after}. Dataset v2 (VPN/Non-VPN) inilah yang digunakan sebagai \textit{full dataset}, selain \textit{VPN Only} dataset yang akan dijelaskan di bagian berikutnya.
+
+\begin{figure}[H]
+    \centering
+    \captionsetup{font=small}
+    \begin{subfigure}[b]{0.7\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{assets/pics/full-binary_dist.png}
+        \caption{Tugas Biner (v2)}
+    \end{subfigure}
+
+    \vspace{0.5em}
+
+    \begin{subfigure}[b]{0.7\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{assets/pics/full-category_dist.png}
+        \caption{Tugas Kategori (v2)}
+    \end{subfigure}
+
+    \vspace{0.5em}
+
+    \begin{subfigure}[b]{0.7\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{assets/pics/full-application_dist.png}
+        \caption{Tugas Aplikasi (v2)}
+    \end{subfigure}
+
+    \caption{Distribusi Dataset v2 (10.284 flow) setelah proses kurasi.}
+    \label{fig:v2_dist_after}
+\end{figure}
+
+\subsection{Kurasi Dataset Khusus VPN (VPN-Only)}
+Selain Dataset v2 (10.284 \textit{flow}) yang digunakan untuk eksperimen ‘penuh’ (VPN/Non-VPN), penelitian ini juga bertujuan untuk mengevaluasi performa model pada skenario yang lebih spesifik: mengklasifikasikan trafik yang sudah diketahui terenkripsi (VPN).
+
+Tantangan utamanya adalah, jika kita sekadar memfilter Dataset v2 (10.284 \textit{flow}) untuk sampel VPN-nya, dataset yang dihasilkan menjadi tidak representatif dan trivial. Sebagai contoh, aplikasi SCP (1.741 \textit{flow}) akan hilang seluruhnya karena tidak memiliki sampel VPN. Lebih kritis lagi, kategori P2P hanya akan diwakili oleh BitTorrent, dan Email hanya oleh Email. Ini berarti model tidak akan belajar membedakan ‘Chat’ dari ‘P2P’, melainkan hanya membedakan ‘Skype’ dari ‘BitTorrent’, yang merupakan tugas yang jauh lebih mudah.
+
+Untuk mengatasi ini, sebuah dataset ‘Khusus VPN’ yang baru dikurasi langsung dari 13.487 \textit{flow} bersih. Tujuannya adalah untuk menciptakan dataset yang tetap menantang dengan tetap mencakup semua 6 kategori. Dataset ini memiliki batasan yang tidak terhindarkan: kategori P2P dan Email masing-masing hanya akan diwakili oleh BitTorrent (363 \textit{flow} VPN) dan Email (137 \textit{flow} VPN). Oleh karena itu, tantangan sebenarnya dari dataset ini adalah kemampuan model untuk membedakan kategori yang saling tumpang tindih (Chat, VoIP, File Transfer, Streaming) yang diwakili oleh beberapa aplikasi.
+
+Untuk memaksimalkan tumpang tindih ini, 9 aplikasi dipilih:
+\begin{itemize}
+    \item \textbf{Chat/VoIP/File Transfer (Tumpang Tindih):} Skype (1246 \textit{flow}), Hangout (325 \textit{flow}), Facebook (247 \textit{flow})
+    \item \textbf{File Transfer Tambahan:} FTP (101 \textit{flow})
+    \item \textbf{Streaming (Variasi):} YouTube (157 \textit{flow}), Spotify (91 \textit{flow}), Netflix (63 \textit{flow})
+    \item \textbf{Perwakilan Kategori Wajib:} BitTorrent (363 \textit{flow}), Email (137 \textit{flow})
+\end{itemize}
+
+Berbeda dengan Dataset v2 yang disalin secara fisik, dataset ini difilter secara dinamis saat runtime menggunakan skrip klasifikasi utama. Konfigurasi skrip diatur ke \texttt{EXPERIMENT\_MODE = "VPN\_ONLY"} dan \texttt{TARGET\_APPS} diisi dengan 9 aplikasi yang dipilih, seperti ditunjukkan pada Listing \ref{lst:filter_vpnonly_pseudo}.
+
+\begin{listing}[H]
+\setstretch{1}
+\begin{minted}[fontsize=\footnotesize, linenos, breaklines]{text}
+VPN Dataset Filter (9 Apps)
+---------------------------
+
+Input: SOURCE_DIR, DEST_DIR, KEYWORD_MAP, TARGET_APPS = {Skype, Hangout, Facebook, BitTorrent, FTP, Email, YouTube, Spotify, Netflix}
+
+filter_and_copy():
+    Print(f"Source: {SOURCE_DIR}\nDest: {DEST_DIR}\nFilter: VPN-only")
+    start = now()
+    
+    mkdir(DEST_DIR) or fatal("mkdir failed")
+    files = listdir(SOURCE_DIR) or fatal("listdir failed")
+    Print(f"{len(files)} files total")
+    
+    cnt = {proc:0, vpn:0, match:0, copy:0, skip:0}
+    
+    for f in files:
+        if !f.endswith(".pcap"): cnt.skip++; continue
+        cnt.proc++
+        if cnt.proc % 1000 == 0: Print(f"{cnt.proc} processed")
+        
+        f_l = f.lower()
+        if !f_l.startswith("vpn_"): continue
+        cnt.vpn++
+        
+        app = next((a for k,(a,_) in KEYWORD_MAP if k in f_l), None)
+        if app in TARGET_APPS:
+            cnt.match++
+            if copy(SOURCE_DIR+f, DEST_DIR+f): cnt.copy++
+            else: Print(f"Error copying {f}")
+    
+    Print(f"Finished in {now()-start}s\n{cnt}")
+
+Main:
+    if __name__ == "__main__":
+        if !GoogleDrive.mounted(): Print("Mount Drive first")
+        else: filter_and_copy()
+\end{minted}
+\captionsetup{font=small}
+\caption{Pseudocode dari skrip Python untuk memfilter dataset VPN-only menjadi 9 aplikasi representatif, mencakup semua 6 kategori aplikasi utama.}
+\label{lst:filter_vpnonly_pseudo}
+\end{listing}
+
+
+Proses penyaringan dinamis ini menghasilkan dataset final ‘Khusus VPN’ yang terdiri dari 2.730 \textit{flow} VPN. Distribusi kelas untuk dataset ini ditunjukkan pada Gambar \ref{fig:vpn_only_dist}.
+
+\begin{figure}[H]
+    \centering
+    \captionsetup{font=small}
+\begin{subfigure}[b]{0.7\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{assets/pics/vpnonly-category_dist.png}
+        \caption{Tugas Kategori (Khusus VPN)}
+    \end{subfigure}
+
+    \vspace{0.5em}
+
+    \begin{subfigure}[b]{0.7\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{assets/pics/vpnonly-application_dist.png}
+        \caption{Tugas Aplikasi (Khusus VPN)}
+    \end{subfigure}
+
+    \caption{Distribusi Dataset 'Khusus VPN' (2.730 flow) setelah kurasi dinamis. Tugas Biner secara alami tidak lagi disertakan dalam konteks ini).}
+    \label{fig:vpn_only_dist}
+\end{figure}
+
+\section{Perancangan dan Implementasi Hybrid Flow Vector (HFV)}
+
+\subsection{Pengantar Kerangka Kerja HFV: $\Omega = (\alpha, \beta, \gamma)$}
+\label{subsec:kerangka_hfv}
+
+Klasifikasi lalu lintas jaringan terenkripsi merupakan tantangan fundamental dalam manajemen jaringan modern dan keamanan siber. Teknik tradisional seperti \textit{Deep Packet Inspection} (DPI) menjadi tidak efektif karena enkripsi menyembunyikan konten \textit{payload} \citep{razooqi2025vpn}. Akibatnya, penelitian beralih ke analisis metadata dan karakteristik perilaku \textit{flow} untuk melakukan identifikasi.
+
+Pendekatan yang ada saat ini umumnya terbagi menjadi dua kategori: (1) model berbasis statistik, yang menganalisis fitur-fitur level \textit{flow} seperti ukuran paket dan \textit{Inter-Arrival Time} (IAT) \citep{DraperGil2016}, dan (2) model berbasis \textit{Deep Learning} (DL), yang dapat belajar representasi kompleks langsung dari data mentah, seperti \textit{raw packet payload} \citep{Lotfollahi2019}.
+
+Namun, kedua pendekatan memiliki keterbatasan jika digunakan secara terpisah. Model statistik murni mungkin gagal menangkap pola-pola rumit di level \textit{byte} yang tersembunyi di dalam \textit{payload} terenkripsi. Sebaliknya, model DL yang hanya berfokus pada \textit{payload} mungkin kehilangan konteks perilaku makroskopis dari keseluruhan \textit{flow}.
+
+Untuk mengatasi keterbatasan ini, penelitian ini merancang dan mengimplementasikan sebuah kerangka kerja representasi fitur hibrida, yang disebut \textbf{\textit{Hybrid Flow Vector} (HFV)}. Hipotesis utamanya adalah bahwa dengan menggabungkan dua "pandangan" yang berbeda dari sebuah \textit{flow}---yaitu pola mikroskopis \textit{level-byte} dan perilaku makroskopis \textit{level-flow}---kita dapat menciptakan sebuah "sidik jari" (\textit{fingerprint}) yang jauh lebih kaya dan tangguh untuk klasifikasi. Pendekatan hibrida yang menggabungkan berbagai jenis fitur telah menunjukkan potensi besar dalam penelitian terkait \citep{jorgensen2023extensible}.
+
+Secara formal, HFV ($\Omega$) didefinisikan sebagai gabungan dari tiga komponen vektor yang berbeda:
+\begin{equation}
+    \Omega = \alpha \oplus \beta \oplus \gamma
+\end{equation}
+dimana $\oplus$ melambangkan operasi konkatenasi (penggabungan) vektor.
+
+Setiap komponen dirancang untuk menangkap aspek unik dari \textit{flow} jaringan:
+\begin{itemize}
+    \item \textbf{Komponen $\alpha$ (alpha)}: Sebuah vektor fitur \textit{deep learning} yang diekstraksi dari \textit{raw payload} paket-paket pertama \textit{flow}. Komponen ini mewakili \textbf{pola level-byte} dan dirancang untuk menangkap tanda tangan (\textit{signature}) mikroskopis yang mungkin spesifik untuk aplikasi tertentu, yang diekstraksi menggunakan arsitektur \textit{1D-Convolutional Neural Network} (1D-CNN).
+
+    \item \textbf{Komponen $\beta$ (beta)}: Sebuah vektor fitur statistik yang komprehensif dari \textbf{keseluruhan \textit{flow}} (\textit{flow-level}). Komponen ini mencakup statistik deskriptif (mean, std, min, max, dll.) dari ukuran paket dan IAT untuk seluruh durasi \textit{flow}, yang menggambarkan perilaku makroskopis.
+
+    \item \textbf{Komponen $\gamma$ (gamma)}: Sebuah vektor fitur statistik yang berfokus pada \textbf{level \textit{burst}} komunikasi. Komponen ini dirancang untuk menangkap pola komunikasi \textit{on-off} (kirim-tunggu-kirim) yang sering terjadi pada aplikasi interaktif atau \textit{streaming}.
+\end{itemize}
+
+Dengan mengintegrasikan ketiga komponen ini, vektor HFV $\Omega$ menyediakan representasi multi-modal yang holistik dari setiap \textit{flow}, yang menjadi dasar untuk proses klasifikasi \textit{machine learning} yang akan dijelaskan selanjutnya. Bagian-bagian berikut akan merinci perancangan dan implementasi teknis dari ekstraksi masing-masing komponen $\alpha$, $\beta$, dan $\gamma$.
+
+\subsection{Komponen \texorpdfstring{$\alpha$}{alpha}: Ekstraksi Fitur 1D-CNN dari Pola Byte-Level}
+\label{subsec:komponen_alpha}
+
+Komponen $\alpha$ dirancang untuk menangkap \textbf{pola mikroskopis level-byte} yang ada di dalam \textit{payload} terenkripsi. Berbeda dengan analisis statistik ($\beta$ dan $\gamma$) yang melihat \textit{flow} dari luar, komponen $\alpha$ mencoba "mengintip" ke dalam data mentah itu sendiri.
+
+Literatur telah menunjukkan bahwa meskipun terenkripsi, \textit{raw packet payload} seringkali masih mengandung pola-pola yang dapat dipelajari oleh model \textit{Deep Learning}, khususnya \textit{1D-Convolutional Neural Networks} (1D-CNN) \citep{wang2017end, Lotfollahi2019}. Pola-pola ini dapat berupa artefak dari protokol aplikasi, \textit{padding}, atau tanda tangan (\textit{signature}) unik lainnya yang tidak dihilangkan oleh enkripsi.
+
+Proses untuk menghasilkan vektor fitur $\alpha$ dibagi menjadi dua fase utama, yang diimplementasikan dalam dua skrip Python terpisah: (1) Ekstraksi Data Payload Mentah, dan (2) Pelatihan Encoder dan Generasi Fitur.
+
+\subsubsection{Fase 1: Ekstraksi Data \textit{Raw Payload}}
+\label{ssubsec:alpha_fase1}
+
+Fase pertama, yang diimplementasikan dalam skrip \texttt{alpha\_1.py}, bertanggung jawab untuk mengubah \textit{flow} \texttt{.pcap} bersih (hasil pra-pemrosesan) menjadi format dataset yang siap digunakan oleh CNN. Logika inti dari skrip ini dijelaskan dalam Kode \ref{lst:pseudo_alpha1}.
+
+\begin{listing}[H]
+\setstretch{1}
+\begin{minted}[fontsize=\footnotesize, linenos, breaklines]{text}
+// Pseudocode untuk Fase 1 (Ekstraksi Payload)
+
+Definisi: N_PACKETS = 10, PAYLOAD_LEN = 784
+Input: SOURCE_DIR (direktori berisi .pcap)
+Output: OUTPUT_DATA_FILE (.npy), OUTPUT_LABELS_FILE (.csv)
+
+FUNGSI process_pcap(file):
+    // 1. Inisialisasi matriks flow (10x784) dengan nol
+    matriks_flow = ArrayNol(N_PACKETS, PAYLOAD_LEN)
+    label_flow = dapatkan_label(file)
+    
+    coba:
+        packets = baca_pcap(file)
+    kecuali Error:
+        kembalikan null // Gagal baca pcap
+    
+    hitung_paket = 0
+    UNTUK setiap pkt dalam packets:
+        // 2. Hanya proses N_PACKETS pertama
+        JIKA hitung_paket >= N_PACKETS MAKA KELUAR_LOOP
+        
+        payload = dapatkan_payload(pkt) // Hanya payload TCP atau UDP
+        
+        // 3. Hanya proses jika ada payload
+        JIKA payload TIDAK KOSONG:
+            // 4. Inisialisasi vektor paket (784,) dengan nol
+            vektor_paket = ArrayNol(PAYLOAD_LEN)
+            panjang_copy = min(panjang(payload), PAYLOAD_LEN)
+            
+            // 5. Salin dan Normalisasi byte
+            data_byte = konversi_ke_byte(payload, panjang_copy)
+            data_normalisasi = data_byte / 255.0
+            
+            vektor_paket[0...panjang_copy] = data_normalisasi
+            
+            // Masukkan ke matriks flow
+            matriks_flow[hitung_paket] = vektor_paket
+            hitung_paket = hitung_paket + 1
+    
+    kembalikan matriks_flow, label_flow
+
+FUNGSI main():
+    daftar_file = dapatkan_semua_file_pcap(SOURCE_DIR)
+    
+    // Proses semua file secara paralel
+    hasil = JalankanParalel(process_pcap, daftar_file)
+    
+    // Pisahkan data dan label
+    (list_data_X, list_label_Y) = pisahkan_hasil(hasil)
+    
+    // Tumpuk menjadi array NumPy besar
+    data_X_final = TumpukArray(list_data_X) // Bentuk: (N, 10, 784)
+    
+    // Simpan ke file
+    simpan_npy(data_X_final, OUTPUT_DATA_FILE)
+    simpan_csv(list_label_Y, OUTPUT_LABELS_FILE)
+\end{minted}
+\captionsetup{font=small}
+\caption{Pseudocode untuk Fase 1: Ekstraksi Data Payload Mentah.}
+\label{lst:pseudo_alpha1}
+\end{listing}
+
+Implementasi spesifik dari langkah ekstraksi dan normalisasi \textit{payload} (langkah 3, 4, dan 5 dalam pseudocode) ditunjukkan pada Kode \ref{lst:snippet_alpha1}. Bagian ini adalah inti dari skrip \texttt{alpha\_1.py}, di mana setiap byte dinormalisasi menjadi nilai antara 0.0 dan 1.0.
 
 \begin{listing}[H]
 \setstretch{1}
     \begin{minted}[
         fontsize=\footnotesize
-    ]{php}
-<?php
-namespace App\Http\Controllers;
-use App\Models\Sidang;
-use Illuminate\Http\Request;
-use App\Http\Requests\SidangStoreRequest; // Class untuk validasi
-use Illuminate\Support\Facades\Auth;
+    ]{python}
+# Potongan kode dari alpha_1.py
+# (dalam fungsi process_pcap_for_cnn)
 
-class SidangController extends Controller
-{
-    /**
-     * Menyimpan data pendaftaran sidang baru.
-     */
-    public function store(SidangStoreRequest $request)
-    {
-        // 1. Validasi request secara otomatis oleh SidangStoreRequest
-        // 2. Simpan berkas-berkas yang diunggah
-        $pathDraf = $request->file('berkas_draf_ta')
-                           ->store('public/draf-sidang');
-        $pathBimbingan = $request->file('berkas_catatan_bimbingan')
-                                 ->store('public/catatan-bimbingan');
-        // 3. Buat entri baru di basis data
-        $sidang = new Sidang();
-        $sidang->mahasiswa_id = Auth::id();
-        $sidang->judul_tugas_akhir = $request->input('judul');
-        $sidang->path_berkas_draf = $pathDraf;
-        $sidang->path_catatan_bimbingan = $pathBimbingan;
-        $sidang->status = 'MENUNGGU_PERSETUJUAN_PEMBIMBING';
-        $sidang->save();
+def process_pcap_for_cnn(pcap_filepath):
+    try:
+        # ... (kode pengambilan label) ...
 
-        // 4. Arahkan pengguna kembali dengan pesan sukses
-        return redirect()->route('sidang.index')
-                         ->with('success', 'Pendaftaran sidang berhasil diajukan.');
-    }
-}
+        # This will be our (10, 784) array for this one flow
+        flow_data = np.zeros((N_PACKETS, PAYLOAD_LEN), dtype=np.float32)
+
+        packets = rdpcap(pcap_filepath)
+        packet_count = 0
+
+        for pkt in packets:
+            if packet_count >= N_PACKETS:
+                break
+
+            # Find the payload (bytes *after* TCP/UDP header)
+            payload = None
+            if TCP in pkt:
+                payload = bytes(pkt[TCP].payload)
+            elif UDP in pkt:
+                payload = bytes(pkt[UDP].payload)
+            
+            if not payload: # Skip jika tidak ada payload
+                continue
+
+            # This is our (784,) vector for this one packet
+            normalized_payload = np.zeros(PAYLOAD_LEN, dtype=np.float32)
+            copy_len = min(len(payload), PAYLOAD_LEN)
+
+            # Copy data dari byte buffer dan normalisasi (0-255 -> 0.0-1.0)
+            byte_data = np.frombuffer(payload[:copy_len], dtype=np.uint8)
+            normalized_payload[:copy_len] = byte_data.astype(np.float32) / 255.0
+
+            # Add the packet vector to our flow matrix
+            flow_data[packet_count] = normalized_payload
+            packet_count += 1
+        
+        # ... (kode return) ...
+    except Exception as e:
+        return None
     \end{minted}
     \captionsetup{font=small}
-    \caption{Contoh kode implementasi fitur pendaftaran sidang.}
-    \label{lst:pendaftaran-sidang}
+    \caption{Potongan kode yang menunjukkan proses normalisasi payload.}
+    \label{lst:snippet_alpha1}
 \end{listing}
 
-\section{Pengembangan Templat Penulisan}
-\label{subsec:pengembangan_templat}
-Selain sistem D'Office, keluaran penting lainnya dari penelitian ini adalah seperangkat templat penulisan yang dirancang untuk secara otomatis menerapkan Pedoman Penulisan Tugas Akhir UI. Dua jenis templat dikembangkan untuk mengakomodasi kebutuhan pengguna yang berbeda, seperti diilustrasikan pada Gambar~\ref{fig:templat-komponen}.
+Hasil akhir dari fase ini adalah dua file:
+\begin{itemize}
+    \item \texttt{VPNOnly-cnn\_payload\_data.npy}: Sebuah \textit{array} NumPy 3-dimensi dengan bentuk \texttt{(jumlah\_sampel, 10, 784)}.
+    \item \texttt{VPNOnly-cnn\_payload\_labels.csv}: File CSV yang berisi label (filename, aplikasi, kategori) yang sesuai untuk setiap sampel.
+\end{itemize}
 
-\begin{figure}[h!]
-    \centering
-    \resizebox{0.8\textwidth}{!}{
-    \begin{tikzpicture}[
-        node distance=1.5cm and 2cm,
-        auto,
-        main/.style={rectangle, draw, fill=blue!20, text width=10em, text centered, minimum height=1.5cm},
-        tool/.style={rectangle, draw, rounded corners, fill=gray!10, align=center, minimum width=8em}
-    ]
-        \node[main] (templat) {Templat Penulisan Tugas Akhir};
-        \node[tool, below left=of templat] (latex) {Templat \LaTeX \\ (\texttt{.cls} dan \texttt{.tex})};
-        \node[tool, below right=of templat] (word) {Templat MS Word \\ (\texttt{.dotx})};
+\subsubsection{Fase 2: Pelatihan Encoder \& Generasi Fitur}
+\label{ssubsec:alpha_fase2}
 
-        \draw[->, thick] (templat) -- (latex);
-        \draw[->, thick] (templat) -- (word);
-    \end{tikzpicture}
-    }
-    %\captionsetup{font=small}
-    \caption{Komponen templat penulisan yang dikembangkan.}
-    \label{fig:templat-komponen}
-\end{figure}
+Fase kedua, diimplementasikan dalam \texttt{alpha\_2.py}, menggunakan data \texttt{.npy} yang dihasilkan Fase 1 untuk melatih model \textit{Deep Learning} dan mengekstrak fitur $\alpha$. Logika skrip ini diringkas dalam Kode \ref{lst:pseudo_alpha2}.
 
-Pengembangan templat ini berfokus pada aspek pemformatan dan dapat diunduh oleh mahasiswa melalui menu ``Unduh Templat'' di D'Office. 
-Adapun, panduan mengenai cara mengisi templat dengan konten berkualitas secara substantif terdapat pada \textbf{Lampiran B}. 
+\begin{listing}[H]
+\setstretch{1}
+\begin{minted}[fontsize=\footnotesize, linenos, breaklines]{text}
+// Pseudocode untuk Fase 2 (Pelatihan Encoder & Generasi Fitur)
+// Berdasarkan alpha_2.py
 
-\subsection{Implementasi Templat \LaTeX{}}
-Pengembangan templat \LaTeX{} difokuskan pada pembuatan sebuah proyek yang modular dan mudah digunakan, memisahkan antara konten, konfigurasi, dan aset visual.
+Definisi: FEATURE_VECTOR_SIZE = 128
+Input: DATA_FILE (.npy), LABELS_FILE (.csv)
+Output: OUTPUT_ALPHA_V3_FILE (.csv), OUTPUT_ENCODER_MODEL_FILE (.keras)
 
-\begin{figure}[h!]
-    \centering
+FUNGSI build_model(num_classes):
+    // Definisikan arsitektur CNN
+    input = Input(shape=(7840, 1))
+    x = Conv1D(filters=32) -> MaxPooling1D(pool_size=4)
+    x = Conv1D(filters=64) -> MaxPooling1D(pool_size=4)
+    x = Conv1D(filters=128) -> MaxPooling1D(pool_size=4)
+    x = Flatten(x)
+    
+    // --- Ini adalah lapisan ENCODER ---
+    x = Dense(FEATURE_VECTOR_SIZE, name="encoder_output")
+    x = Dropout(0.5)(x)
+    // ----------------------------------
+    
+    // --- Ini adalah lapisan CLASSIFIER (untuk pelatihan) ---
+    output = Dense(num_classes, activation="softmax")
+    
+    model = Model(inputs=input, outputs=output)
+    model.compile(optimizer="adam", loss="categorical_crossentropy")
+    kembalikan model
+
+FUNGSI main():
+    (X_full, y_full, df_labels) = load_and_prepare_data()
+    // 1. Bentuk ulang data
+    X_full_reshaped = reshape(X_full, (N, 7840, 1))
+    // 2. Siapkan label (one-hot encoding)
+    y_full_categorical = to_categorical(y_full['application'])
+    
+    // 3. Bangun dan Latih Model
+    model = build_model(num_classes)
+    (X_train, X_val, y_train, y_val) = train_test_split(X_full_reshaped, ...)
+    model.fit(X_train, y_train, validation_data=(X_val, y_val), ...)
+    
+    // 4. "Potong" model untuk mendapatkan encoder
+    encoder_model = Model(inputs=model.input, 
+                          outputs=model.get_layer("encoder_output").output)
+    
+    // 5. Gunakan encoder untuk memprediksi (ekstrak fitur) pada SEMUA data
+    alpha_features = encoder_model.predict(X_full_reshaped) // Bentuk: (N, 128)
+    
+    // 6. Simpan hasil
+    df_alpha = DataFrame(alpha_features, columns=['alpha_pp_0', ...])
+    df_final = gabung(df_labels['filename'], df_alpha)
+    simpan_csv(df_final, OUTPUT_ALPHA_V3_FILE)
+    encoder_model.save(OUTPUT_ENCODER_MODEL_FILE)
+\end{minted}
+\captionsetup{font=small}
+\caption{Pseudocode untuk Fase 2: Pelatihan Encoder dan Generasi Fitur $\alpha$.}
+\label{lst:pseudo_alpha2}
+\end{listing}
+
+Seperti dijelaskan dalam pseudocode, sebuah model 1D-CNN dibangun (Kode \ref{lst:snippet_alpha2}). Tujuan utamanya adalah untuk melatih lapisan \textit{Dense} (neuron=128) agar menjadi ekstraktor fitur yang baik. Lapisan ini diberi nama "encoder\_output" agar dapat diekstraksi dengan mudah setelah pelatihan.
+
+\begin{listing}[H]
+\setstretch{1}
     \begin{minted}[
         fontsize=\footnotesize
-    ]{text}
-.
-|-- _internals/      (Konfigurasi inti, tidak perlu diubah)
-|-- assets/
-|   |-- pdfs/        (Tempat untuk file PDF)
-|   `-- pics/        (Tempat untuk semua file gambar)
-|-- src/
-|   |-- 00-front_matter/
-|   |-- 01-body/
-|   `-- 99-back_matter/
-|-- pustaka.bib      (Database referensi Anda)
-|-- settings.tex     (Pengaturan judul, nama, NPM, dll.)
-`-- thesis.tex       (File utama untuk kompilasi)
+    ]{python}
+# Potongan kode dari alpha_2.py
+# (Fungsi build_model)
+
+def build_model(num_classes):
+    print("Building 1D-CNN model...")
+
+    input_layer = Input(shape=INPUT_SHAPE) # INPUT_SHAPE = (7840, 1)
+
+    # Convolutional Block 1
+    x = Conv1D(filters=32, kernel_size=7, activation='relu', padding='same')(input_layer)
+    x = MaxPooling1D(pool_size=4)(x)
+
+    # Convolutional Block 2
+    x = Conv1D(filters=64, kernel_size=5, activation='relu', padding='same')(x)
+    x = MaxPooling1D(pool_size=4)(x)
+
+    # Convolutional Block 3
+    x = Conv1D(filters=128, kernel_size=3, activation='relu', padding='same')(x)
+    x = MaxPooling1D(pool_size=4)(x)
+
+    x = Flatten()(x)
+
+    # --- This is our Feature Vector ---
+    # We give it a name so we can easily extract it later
+    x = Dense(FEATURE_VECTOR_SIZE, activation='relu', name="encoder_output")(x)
+    x = Dropout(0.5)(x)
+    # ----------------------------------
+
+    # Output classifier layer (Hanya untuk pelatihan)
+    output_layer = Dense(num_classes, activation='softmax', name="classifier_output")(x)
+
+    # Create the full model
+    model = Model(inputs=input_layer, outputs=output_layer)
+    
+    # ... (kode compile) ...
+    return model
     \end{minted}
     \captionsetup{font=small}
-    \caption{Struktur direktori dari proyek templat \LaTeX{}.}
-    \label{fig:struktur-latex}
+    \caption{Potongan kode dari \texttt{alpha\_2.py} menunjukkan arsitektur 1D-CNN.}
+    \label{lst:snippet_alpha2}
+\end{listing}
+
+Model \textit{lengkap} dilatih pada 80\% data untuk mengklasifikasikan \textbf{aplikasi}. Dengan "memaksa" model membedakan 'Skype' dari 'Netflix', lapisan "encoder\_output" (Dense 128) belajar menghasilkan representasi vektor 128-dimensi yang informatif.
+
+Setelah pelatihan selesai, bagian \textit{classifier} dibuang, dan model \textit{encoder} yang sudah "pintar" ini digunakan untuk memprediksi \textit{seluruh} dataset. Proses ekstraksi ini ditunjukkan pada Kode \ref{lst:snippet_alpha3}.
+
+\begin{listing}[H]
+\setstretch{1}
+    \begin{minted}[
+        fontsize=\footnotesize
+    ]{python}
+# Potongan kode dari alpha_2.py
+# (dari fungsi main)
+
+    # ... (Kode memuat data dan melatih 'model') ...
+
+    print("Extracting and saving the encoder model...")
+
+    # 4. Buat model encoder baru dengan "memotong" model yang sudah dilatih
+    encoder_model = Model(
+        inputs=model.input,
+        outputs=model.get_layer("encoder_output").output
+    )
+
+    encoder_model.save(OUTPUT_ENCODER_MODEL_FILE)
+
+    # 5. Gunakan encoder untuk mengekstrak fitur dari *seluruh* dataset
+    print(f"Generating {FEATURE_VECTOR_SIZE}-dim features for all {X_full.shape[0]} samples...")
+    alpha_prime_prime_features = encoder_model.predict(X_full, batch_size=128)
+
+    # ... (Kode menyimpan 'alpha_prime_prime_features' ke CSV) ...
+    \end{minted}
+    \captionsetup{font=small}
+    \caption{Potongan kode yang menunjukkan proses ekstraksi fitur $\alpha$.}
+    \label{lst:snippet_alpha3}
+\end{listing}
+
+Hasil dari Fase 2 adalah \textit{array} 2D \texttt{(jumlah\_sampel, 128)}. Ini adalah \textbf{komponen fitur $\alpha$} final, yang kemudian disimpan ke file CSV untuk digabungkan dengan komponen $\beta$ dan $\gamma$.
+
+\begin{figure}[H]
+    \centering
+    \begin{tikzpicture}[
+        node distance=2.5cm and 2cm, % Jarak vertikal & horizontal lebih longgar
+        block/.style = {
+            rectangle, draw, thick, fill=blue!10,
+            text width=11em, text centered, rounded corners,
+            minimum height=3em, drop shadow
+        },
+        data_node/.style = {
+            cylinder, draw, thick, fill=orange!10,
+            shape aspect=0.3, minimum height=2.5em, text centered,
+            text width=10em, drop shadow
+        },
+        label_node/.style = {
+            cylinder, draw, thick, fill=green!10, shape aspect=0.3,
+            minimum height=2.5em, text centered, text width=10em, 
+            drop shadow
+        },
+        arrow/.style = {
+            thick, ->, >=Stealth
+        }
+    ]
+        
+        \small
+        
+        % --- Alur Vertikal ---
+        
+        % Fase 1: Ekstraksi Payload
+        \node (pcap) [data_node] {Flow .pcap Bersih};
+        
+        \node (step1) [block, below=of pcap] {Fase 1: Ekstraksi Payload \texttt{(...1.py)}};
+        
+        % Node untuk keterangan Fase 1
+        \node (desc1) [below=0.4cm of step1, text width=11em, align=center, font=\tiny] 
+            {10 pkt $\times$ 784 byte.\\Normalisasi 0.0-1.0.};
+        
+        \node (npy) [data_node, below=3cm of step1] {Data Payload Mentah};
+        
+        % Node untuk keterangan bentuk data
+        \node (desc_npy) [below=0.4cm of npy, font=\tiny] 
+            {Bentuk: (N, 7840, 1)};
+        
+        % Panah Fase 1
+        \draw [arrow] (pcap) -- (step1);
+        \draw [arrow] (step1) -- (npy);
+        
+        % Fase 2: Input Pelatihan
+        \node (labels) [label_node, right=2.5cm of npy, yshift=1cm] {Label Aplikasi};
+        \node (desc_labels) [below=0.4cm of labels, font=\tiny, xshift=2mm] 
+            {(Mis: 'Skype')};
+        
+        % Model container
+        \node (model) [block, fill=red!5, below=4cm of npy, text width=13em, 
+                      minimum height=10em] {};
+        
+        % Node internal dalam model dengan positioning relatif yang lebih rapi
+        \node (conv) [draw, fill=white, text width=11em, text centered, 
+                     minimum height=2em, drop shadow, anchor=north] 
+                     at ([yshift=-0.6cm]model.north) {Blok Konvolusi (Conv/Pool)};
+        \node (encoder) [draw, fill=yellow!20, text width=11em, text centered, 
+                        minimum height=2em, drop shadow, below=1cm of conv] 
+                        {Lapisan Encoder (Dense 128)};
+        \node (classifier) [draw, fill=white, text width=11em, text centered, 
+                           minimum height=2em, drop shadow, below=1cm of encoder] 
+                           {Lapisan Klasifikasi (Softmax)};
+        
+        % Judul model
+        \node [above=0.2cm of model.north, font=\small, anchor=south] 
+              {Fase 2: Arsitektur 1D-CNN \texttt{(...2.py)}};
+        
+        % Panah Pelatihan dengan posisi label yang lebih jelas
+        \draw [arrow] (npy) -- node[left, pos=0.3, font=\tiny] {(Data Latih)} (model.north);
+        \draw [arrow] (labels.west) -| node[above right, pos=0.2, font=\tiny] {(Target Latih)} (model.east);
+        
+        % Fase 2b: Generasi Fitur
+        \node (alpha) [data_node, fill=yellow!20, below=4.5cm of model] {Komponen Fitur $\alpha$};
+        \node (desc_alpha) [below=0.4cm of alpha, font=\tiny] 
+            {Bentuk: (N, 128)};
+        
+        % Panah Ekstraksi dengan label yang dipendekkan dan posisi yang lebih baik
+        \draw [arrow, line width=1.5pt] (model.south) -- node[right, pos=0.6, align=center, 
+            text width=7em, font=\tiny] {Ekstraksi fitur dari\\lapisan \textbf{encoder}} (alpha.north);
+        
+    \end{tikzpicture}
+    \caption{Diagram alir proses ekstraksi komponen fitur $\alpha$ (alpha). Data payload mentah diekstrak dari \texttt{.pcap} (Fase 1), kemudian sebuah 1D-CNN dilatih untuk mengklasifikasikan aplikasi. Lapisan \textit{encoder} (Dense 128) dari model yang telah dilatih kemudian digunakan untuk menghasilkan vektor fitur $\alpha$ akhir.}
+    \label{fig:alpha_extraction_vertical}
 \end{figure}
 
-Struktur direktori templat dirancang agar pengguna dapat fokus pada penulisan konten tanpa harus mengubah konfigurasi inti. 
-Visualisasi dari struktur ini dapat dilihat pada Gambar~\ref{fig:struktur-latex}, dan fungsi dari setiap berkas kunci dijelaskan pada Tabel~\ref{tab:fungsi-berkas}.
+\subsection{Komponen \texorpdfstring{$\beta$}{beta}: Statistik Level Flow}
+\label{subsec:komponen_beta}
 
-\begin{table}[h!]
-    \centering
-    \captionsetup{justification=justified,singlelinecheck=false}
-    \caption{Penjelasan berkas dan direktori kunci pada templat \LaTeX{}.}
-    \label{tab:fungsi-berkas}
-    \begin{tabularx}{\linewidth}{|l|X|}
-        \hline
-        \textbf{Berkas/Direktori} & \textbf{Fungsi dan Panduan Penggunaan} \\
-        \hline
-        \texttt{thesis.tex} & Berkas \textbf{induk} yang menyatukan semua bagian. Pengguna hanya perlu meng-kompilasi berkas ini. \\
-        \hline
-        \texttt{settings.tex} & Berkas \textbf{konfigurasi utama}. Edit berkas ini untuk mengisi judul skripsi, nama, NPM, program studi, pembimbing, dan penguji. \\
-        \hline
-        \texttt{pustaka.bib} & Berkas \textbf{basis data referensi}. Masukkan semua sumber sitasi Anda di sini dalam format BibTeX. \\
-        \hline
-        \texttt{src/00-front\_matter/} & Direktori untuk halaman-halaman awal. Edit berkas \texttt{.tex} di dalamnya, seperti \texttt{06-abstrak.tex} dan \texttt{04-pengantar.tex}, untuk mengisi konten bagian awal. \\
-        \hline
-        \texttt{src/01-body/} & Direktori untuk bab-bab utama. Tulis konten Bab 1 Anda di \texttt{01-bab1.tex}, Bab 2 di \texttt{02-bab2.tex}, dan seterusnya. \\
-        \hline
-        \texttt{src/99-back\_matter/} & Direktori untuk bagian akhir. Tulis konten lampiran Anda di dalam berkas \texttt{lampiran.tex}. \\
-        \hline
-        \texttt{assets/pics/} & Direktori untuk menyimpan semua berkas gambar (misalnya, \texttt{.png}, \texttt{.jpg}) yang akan dimasukkan ke dalam naskah. \\
-        \hline
-    \end{tabularx}
-\end{table}
+Komponen $\beta$ dirancang untuk menangkap \textbf{pola makroskopis} dari keseluruhan \textit{flow} jaringan. Komponen ini didasarkan pada hipotesis bahwa bahkan ketika \textit{payload} dienkripsi, karakteristik perilaku statistik dari aliran---seperti seberapa sering, seberapa besar, dan kapan paket dikirim---dapat mengungkapkan informasi penting tentang aplikasi yang mendasarinya \citep{DraperGil2016}.
 
-Proses penulisan tugas akhir menggunakan templat ini menjadi sangat terstruktur. Mahasiswa memulai dengan mengisi data personal di \texttt{settings.tex}, kemudian fokus menulis substansi di dalam direktori \texttt{src/}, menambahkan referensi ke \texttt{pustaka.bib}, dan meletakkan gambar di \texttt{assets/pics/}. Adapun panduan yang lebih mendalam mengenai cara menggunakan templat dengan baik agar dapat menggunakan fitur-fitur pengolahan teks yang biasa digunakan dapat ditemukan pada \textbf{Lampiran C}.
+Komponen ini (disebut sebagai \textit{Delta ($\delta$)} dalam dokumentasi proyek awal) menggantikan komponen $\beta$ asli dari model PESV, yang bergantung pada perbandingan prototipe yang ambigu (seperti dijelaskan dalam \ref{cha:pendahuluan}). Komponen $\beta$ yang baru ini jauh lebih tangguh karena secara langsung menghitung profil statistik deskriptif dari aliran itu sendiri, tanpa memerlukan perbandingan eksternal.
 
-\subsection{Implementasi Templat Microsoft Word}
-Untuk mengakomodasi pengguna yang tidak terbiasa dengan \LaTeX{}, sebuah templat Microsoft Word (\texttt{.dotx}) juga dikembangkan. 
-Templat ini memanfaatkan fitur \textbf{Styles} secara ekstensif. Telah didefinisikan berbagai \textit{style} (misalnya, ``Judul Bab'', ``Paragraf Isi'', ``\textit{Caption} Gambar'') yang sudah diatur sesuai pedoman. 
-Pengguna hanya perlu menerapkan \textit{style} yang sesuai pada setiap bagian teks untuk mendapatkan format yang konsisten.
+Implementasi ekstraksi fitur $\beta$ dilakukan oleh skrip \texttt{v2\_beta.py} (merujuk pada \texttt{v2-delta.ipynb}). Logika inti dari skrip ini diringkas dalam Pseudocode \ref{lst:pseudo_beta}.
 
-% Kode ini adalah kelanjutan dari sub-bab sebelumnya.
-% Pastikan Anda sudah menambahkan library TikZ berikut di preamble:
-% \usetikzlibrary{shapes.geometric, 3d, positioning, arrows.meta}
+\begin{listing}[H]
+\setstretch{1}
+\begin{minted}[fontsize=\footnotesize, linenos, breaklines]{text}
+// Pseudocode Ringkas untuk Ekstraksi Komponen Beta (Statistik Flow)
+// Berdasarkan v2_beta.py
 
-\section{Manajemen Proyek}
-\label{sec:manajemen_proyek}
-Selain perancangan teknis, keberhasilan sebuah proyek rekayasa perangkat lunak juga sangat bergantung pada manajemen waktu dan perencanaan yang baik. 
-Pengerjaan proyek ini mengikuti fase-fase dari Siklus Hidup Pengembangan Sistem \ac{SDLC} yang telah diuraikan pada Bab~\ref{cha:studiliteratur}. 
-Untuk memastikan setiap fase dapat selesai sesuai target, dibuat sebuah jadwal kerja yang dipetakan dalam linimasa proyek.
+Input: FLOW_DIR (direktori .pcap)
+Output: OUTPUT_CSV (file .csv berisi fitur beta)
 
-Tabel~\ref{tab:gantt-tabular} menguraikan fase-fase utama pengerjaan proyek, yang dipetakan ke dalam tahapan SDLC, beserta alokasi waktunya dalam kurun waktu satu tahun akademik.
+// Fungsi 'calculate_stats' didefinisikan di tempat lain,
+// ia mengambil sebuah daftar angka dan mengembalikan 9 statistik
+// (count, sum, mean, std, min, max, median, p25, p75)
 
-\begin{table}[H]
-    \centering
-    \Huge
-    \captionsetup{justification=justified,singlelinecheck=false}
-    \caption{Linimasa pengerjaan proyek berdasarkan fase SDLC.}
-    \label{tab:gantt-tabular}
-    \resizebox{\textwidth}{!}{%
-    \begin{tabular}{|l|l|c|c|c|c|c|c|c|c|c|c|c|c|}
-        \hline
-        \multicolumn{2}{|c|}{\textbf{Fase SDLC \& Aktivitas}} & \multicolumn{6}{c|}{\textbf{Semester Ganjil 2025}} & \multicolumn{6}{c|}{\textbf{Semester Genap 2026}} \\
-        \cline{3-14}
-        \multicolumn{2}{|c|}{} & \textbf{Agu} & \textbf{Sep} & \textbf{Okt} & \textbf{Nov} & \textbf{Des} & \textbf{Jan} & \textbf{Feb} & \textbf{Mar} & \textbf{Apr} & \textbf{Mei} & \textbf{Jun} & \textbf{Jul} \\
-        \hline
-        \multirow{2}{*}{\textbf{1. Analisis}} & Studi Literatur \& Analisis Kebutuhan & \multicolumn{3}{c|}{\cellcolor{gray!40}} & & & & & & & & & \\
-        & Penyusunan Proposal TA & & & \multicolumn{2}{c|}{\cellcolor{gray!40}} & & & & & & & & \\
-        \hline
-        \textbf{2. Perancangan} & Perancangan Sistem (UML) & & & & & \multicolumn{2}{c|}{\cellcolor{gray!40}} & & & & & & \\
-        \hline
-        \multirow{2}{*}{\textbf{3. Implementasi}} & Implementasi Sistem D'Office & & & & & & & \multicolumn{3}{c|}{\cellcolor{gray!40}} & & & \\
-        & Pengembangan Templat (LaTeX \& Word) & & & & & & & & \multicolumn{2}{c|}{\cellcolor{gray!40}} & & & \\
-        \hline
-        \textbf{4. Pengujian} & Pengujian \& Evaluasi Sistem & & & & & & & & & & \multicolumn{1}{c|}{\cellcolor{gray!40}} & & \\
-        \hline
-        \textbf{5. Dokumentasi} & Penyusunan Laporan Final TA & & & & & & & & & & \multicolumn{2}{c|}{\cellcolor{gray!40}} & \\
-        \hline
-        \multicolumn{2}{|l|}{\textit{Milestone: Sidang Tugas Akhir}} & & & & & & & & & & & & \multicolumn{1}{c|}{\cellcolor{red!40}} \\
-        \hline
-    \end{tabular}%
-    }
-\end{table}
+FUNGSI process_pcap_file(file):
+    // 1. Dapatkan label dari nama file
+    (app, cat, type) = get_flow_labels(file)
+    JIKA app KOSONG MAKA kembalikan null
+    
+    // 2. Tentukan IP Klien & pisahkan paket secara bidireksional
+    packets = baca_pcap(file)
+    client_ip = dapatkan_IP_sumber_paket_pertama(packets)
+    
+    (list_c2s_sizes, list_c2s_times) = DapatkanPaket(packets, arah="c2s", client_ip)
+    (list_s2c_sizes, list_s2c_times) = DapatkanPaket(packets, arah="s2c", client_ip)
 
-Linimasa pengerjaan proyek pada Tabel~\ref{tab:gantt-tabular} dirancang untuk berjalan selama satu tahun akademik penuh, mengikuti tahapan SDLC secara sekuensial. Semester Ganjil difokuskan pada dua tahap awal SDLC. Tahap Analisis, yang mencakup studi literatur dan penyusunan proposal, dilaksanakan dari Agustus hingga November. Tahap ini dilanjutkan dengan tahap Perancangan sistem secara mendetail, yang dialokasikan dari Desember hingga Januari.
+    // 3. Hitung Inter-Arrival Times (IAT) bidireksional
+    list_c2s_iats = hitung_selisih_waktu(list_c2s_times)
+    list_s2c_iats = hitung_selisih_waktu(list_s2c_times)
+    
+    // 4. Hitung 36 fitur statistik (9 statistik x 4 daftar)
+    fitur_beta = {}
+    update(fitur_beta, calculate_stats(list_c2s_sizes, "c2s_size"))
+    update(fitur_beta, calculate_stats(list_s2c_sizes, "s2c_size"))
+    update(fitur_beta, calculate_stats(list_c2s_iats, "c2s_iat"))
+    update(fitur_beta, calculate_stats(list_s2c_iats, "s2c_iat"))
+    
+    // 5. Tambahkan 3 fitur total flow (durasi, total paket, total volume)
+    update(fitur_beta, hitung_fitur_total_flow(list_c2s_times, ...))
+    
+    // 6. Gabungkan label dan fitur
+    hasil_akhir = gabung(label, fitur_beta)
+    kembalikan hasil_akhir
 
-Memasuki Semester Genap, fokus beralih ke tahap-tahap selanjutnya. Tahap Implementasi, yang mencakup pengembangan sistem D'Office dan templat, dimulai pada bulan Februari dan berlangsung hingga April. Tahap Pengujian kemudian dilakukan pada bulan Mei. Tahap terakhir, yaitu Dokumentasi atau penyusunan laporan akhir, berjalan tumpang tindih dengan tahap pengujian, mulai dari bulan Mei hingga Juni. Seluruh rangkaian proyek kemudian ditutup dengan sidang tugas akhir yang dijadwalkan pada bulan Juli.
+// ------------- PROSES UTAMA -------------
+// 1. Dapatkan daftar semua file .pcap dari FLOW_DIR
+// 2. Jalankan FUNGSI process_pcap_file SECARA PARALEL untuk setiap file
+// 3. Kumpulkan semua 'hasil_akhir' yang valid
+// 4. Konversi kumpulan hasil menjadi DataFrame dan simpan ke OUTPUT_CSV
+\end{minted}
+\captionsetup{font=small}
+\caption{Pseudocode untuk Ekstraksi Komponen $\beta$ (Statistik Level Flow).}
+\label{lst:pseudo_beta}
+\end{listing}
+
+Kunci dari komponen $\beta$ adalah analisis \textbf{bidireksional}. Untuk setiap \textit{flow}, skrip terlebih dahulu mengidentifikasi IP klien (diasumsikan sebagai IP sumber dari paket pertama), seperti terlihat pada Kode \ref{lst:snippet_beta1}.
+
+\begin{listing}[H]
+\setstretch{1}
+    \begin{minted}[
+        fontsize=\footnotesize
+    ]{python}
+# Potongan kode dari v2_beta.py
+# (dalam fungsi process_pcap_file)
+
+    # ... (kode inisialisasi list) ...
+    try:
+        packets = rdpcap(filepath)
+
+        client_ip = None
+        for pkt in packets:
+            if IP in pkt:
+                client_ip = pkt[IP].src
+                break
+
+        if client_ip is None:
+            return None # Skip non-IP flows
+        # ...
+    \end{minted}
+    \captionsetup{font=small}
+    \caption{Potongan kode dari \texttt{v2\_beta.py} menunjukkan identifikasi IP klien.}
+    \label{lst:snippet_beta1}
+\end{listing}
+
+Setelah IP klien diketahui, skrip melakukan iterasi kedua melalui semua paket untuk memisahkan ukuran dan waktu kedatangan paket ke dalam empat daftar terpisah:
+\begin{itemize}
+    \item \texttt{c2s\_sizes}: Ukuran paket dari Klien ke Server.
+    \item \texttt{c2s\_times}: Waktu kedatangan paket dari Klien ke Server.
+    \item \texttt{s2c\_sizes}: Ukuran paket dari Server ke Klien.
+    \item \texttt{s2c\_times}: Waktu kedatangan paket dari Server ke Klien.
+\end{itemize}
+
+Selanjutnya, waktu kedatangan (misalnya \texttt{c2s\_times}) digunakan untuk menghitung \textit{Inter-Arrival Times} (IAT) untuk setiap arah. Kode \ref{lst:snippet_beta2} menunjukkan bagaimana daftar IAT ini dihitung menggunakan fungsi \texttt{np.diff}.
+
+\begin{listing}[H]
+\setstretch{1}
+    \begin{minted}[
+        fontsize=\footnotesize
+    ]{python}
+# Potongan kode dari v2_beta.py
+# (dalam fungsi process_pcap_file)
+
+    # ... (kode ekstraksi paket bidireksional) ...
+
+    # 5. Calculate Inter-Arrival Times (IATs)
+    # np.diff computes the difference between consecutive elements
+    c2s_iats = np.diff(c2s_times).tolist()
+    s2c_iats = np.diff(s2c_times).tolist()
+
+    # 6. Calculate all statistical features
+    features = {}
+    # ...
+    \end{minted}
+    \captionsetup{font=small}
+    \caption{Potongan kode dari \texttt{v2\_beta.py} menunjukkan kalkulasi IAT bidireksional.}
+    \label{lst:snippet_beta2}
+\end{listing}
+
+Terakhir, fungsi utilitas \texttt{calculate\_stats} (ditampilkan dalam Kode \ref{lst:snippet_beta3}) dipanggil pada keempat daftar ini (\texttt{c2s\_sizes}, \texttt{s2c\_sizes}, \texttt{c2s\_iats}, \texttt{s2c\_iats}).
+
+\begin{listing}[H]
+\setstretch{1}
+    \begin{minted}[
+        fontsize=\footnotesize
+    ]{python}
+# Potongan kode dari v2_beta.py
+# (Fungsi calculate_stats)
+
+def calculate_stats(data_list, prefix):
+    """
+    Calculates a full statistical profile for a list of numbers.
+    Returns a dictionary of features.
+    """
+    stats = {}
+
+    # Ensure all keys exist, even if they are 0
+    stat_names = ['count', 'sum', 'mean', 'std', 'min', 'max', 'median', 'p25', 'p75']
+    for name in stat_names:
+        stats[f"{prefix}_{name}"] = 0.0
+
+    if not data_list:
+        return stats # Return all zeros
+
+    arr = np.array(data_list)
+
+    stats[f"{prefix}_count"] = float(arr.size)
+    stats[f"{prefix}_sum"] = float(np.sum(arr))
+    stats[f"{prefix}_mean"] = float(np.mean(arr))
+    stats[f"{prefix}_min"] = float(np.min(arr))
+    stats[f"{prefix}_max"] = float(np.max(arr))
+    stats[f"{prefix}_median"] = float(np.median(arr))
+
+    # Percentiles
+    stats[f"{prefix}_p25"] = float(np.percentile(arr, 25))
+    stats[f"{prefix}_p75"] = float(np.percentile(arr, 75))
+
+    # Std deviation requires at least 2 samples
+    if arr.size > 1:
+        stats[f"{prefix}_std"] = float(np.std(arr))
+
+    return stats
+    \end{minted}
+    \captionsetup{font=small}
+    \caption{Potongan kode dari \texttt{v2\_beta.py} menunjukkan fungsi utilitas kalkulasi 9 statistik.}
+    \label{lst:snippet_beta3}
+\end{listing}
+
+Fungsi ini menghitung 9 statistik deskriptif: \textit{count} (jumlah), \textit{sum} (total), \textit{mean} (rata-rata), \textit{std} (standar deviasi), \textit{min}, \textit{max}, \textit{median}, \textit{p25} (kuartil 1), dan \textit{p75} (kuartil 3).
+
+Karena 9 statistik ini dihitung untuk 4 daftar yang berbeda (ukuran c2s, ukuran s2c, IAT c2s, IAT s2c), total $9 \times 4 = 36$ fitur statistik bidireksional dihasilkan. Ditambah dengan 3 fitur level \textit{flow} total (durasi, total paket, total volume), komponen $\beta$ akhir terdiri dari \textbf{39 fitur} statistik.
+
+\subsection{Komponen \texorpdfstring{$\gamma$}{gamma}: Statistik Level Burst}
+\label{subsec:komponen_gamma}
+
+Komponen $\gamma$ (gamma) dirancang untuk menangkap \textbf{pola komunikasi \textit{on-off}} dari sebuah aliran. Analisis ini berbeda dari komponen $\beta$, yang melihat aliran sebagai satu kesatuan statistik, dan komponen $\alpha$, yang melihat \textit{payload} mentah. Komponen $\gamma$ berfokus pada ritme komunikasi.
+
+Banyak aplikasi, terutama yang bersifat interaktif (seperti \textit{chat} atau VoIP) atau \textit{streaming} (seperti video), tidak mengirimkan data dalam aliran yang konstan. Sebaliknya, mereka mengirimkan sekelompok paket (\textit{burst}) data, diikuti dengan jeda (waktu diam), lalu diikuti dengan \textit{burst} data berikutnya. Menganalisis karakteristik dari \textit{burst} dan jeda ini dapat memberikan sidik jari yang kuat untuk mengidentifikasi jenis aplikasi..
+
+\subsubsection{Definisi Burst}
+Kunci dari analisis ini adalah definisi "burst". Dalam penelitian ini, sebuah \textit{burst} didefinisikan sebagai sekelompok paket (satu atau lebih) di mana waktu jeda antar paket tersebut \textbf{kurang dari 1.0 detik}. Jika jeda antar dua paket melebihi ambang batas ini, \textit{burst} sebelumnya dianggap selesai dan \textit{burst} baru dimulai. Nilai ambang batas 1.0 detik ini diatur dalam variabel \texttt{BURST\_IDLE\_THRESHOLD}.
+
+\subsubsection{Implementasi Ekstraksi (gamma.py)}
+Ekstraksi fitur $\gamma$ diimplementasikan dalam skrip \texttt{gamma.py}. Berbeda dengan komponen $\beta$, analisis \textit{burst} ini bersifat \textbf{unidireksional} dalam arti menggabungkan paket dari kedua arah (Klien $\leftrightarrow$ Server) menjadi satu urutan waktu sebelum diproses.
+
+Logika inti dari skrip ini diringkas dalam Pseudocode \ref{lst:pseudo_gamma}.
+
+\begin{listing}[H]
+\setstretch{1}
+\begin{minted}[fontsize=\footnotesize, linenos, breaklines]{text}
+// Pseudocode Inti Algoritma Deteksi Burst (Komponen Gamma)
+// Berdasarkan gamma.py
+
+Definisi: THRESHOLD = 1.0 (detik)
+
+// 1. Dapatkan semua paket (waktu, ukuran) dari flow, 
+//    sudah digabung (bidireksional) dan diurutkan berdasarkan waktu.
+list_semua_paket = DapatkanSemuaPaketTerurut(file)
+
+// 2. Inisialisasi daftar hasil
+list_counts, list_volumes, list_durations, list_idles = [], [], [], []
+
+// 3. Inisialisasi state burst pertama
+pkt_pertama = list_semua_paket[0]
+burst_count = 1
+burst_volume = pkt_pertama.ukuran
+burst_start_time = pkt_pertama.waktu
+last_pkt_time = pkt_pertama.waktu
+
+// 4. Loop inti deteksi burst (mulai dari paket KEDUA)
+UNTUK setiap (pkt_time, pkt_size) dalam list_semua_paket[1...]:
+    idle_time = pkt_time - last_pkt_time
+    
+    JIKA idle_time < THRESHOLD:
+        // Lanjutkan burst saat ini
+        burst_count += 1
+        burst_volume += pkt_size
+    LAIN:
+        // Batas burst terdeteksi (idle_time >= 1.0s)
+        // a. Simpan burst sebelumnya
+        tambahkan (last_pkt_time - burst_start_time) ke list_durations
+        tambahkan burst_count ke list_counts
+        tambahkan burst_volume ke list_volumes
+        
+        // b. Simpan waktu jeda (antar burst)
+        tambahkan idle_time ke list_idles
+        
+        // c. Reset state untuk burst baru
+        burst_count = 1
+        burst_volume = pkt_size
+        burst_start_time = pkt_time
+    
+    last_pkt_time = pkt_time // Perbarui waktu paket terakhir
+
+
+// 5. Simpan burst TERAKHIR (setelah loop selesai)
+tambahkan (last_pkt_time - burst_start_time) ke list_durations
+tambahkan burst_count ke list_counts
+tambahkan burst_volume ke list_volumes
+
+// 6. Hitung 37 fitur final
+fitur_gamma = {}
+fitur_gamma["total_burst_count"] = panjang(list_counts)
+update(fitur_gamma, calculate_stats(list_counts, "burst_pkt_count"))
+update(fitur_gamma, calculate_stats(list_volumes, "burst_vol"))
+update(fitur_gamma, calculate_stats(list_durations, "burst_dur"))
+update(fitur_gamma, calculate_stats(list_idles, "burst_idle"))
+
+kembalikan fitur_gamma
+\end{minted}
+\captionsetup{font=small}
+\caption{Pseudocode untuk Ekstraksi Komponen $\gamma$ (Statistik Level Burst).}
+\label{lst:pseudo_gamma}
+\end{listing}
+
+Kode \ref{lst:snippet_gamma1} menunjukkan logika inti dari algoritma deteksi \textit{burst} ini. Skrip mengiterasi setiap paket (mulai dari paket kedua) dan menghitung \texttt{idle\_time} (waktu jeda) dari paket sebelumnya.
+
+\begin{listing}[H]
+\setstretch{1}
+    \begin{minted}[
+        fontsize=\footnotesize
+    ]{python}
+# Potongan kode dari gamma.py
+# (dalam fungsi process_pcap_file)
+
+    # ... (kode inisialisasi burst pertama) ...
+    last_packet_time = all_packets[0][0]
+
+    # Iterate from the *second* packet onwards
+    for (pkt_time, pkt_size) in all_packets[1:]:
+        idle_time = pkt_time - last_packet_time
+
+        if idle_time < BURST_IDLE_THRESHOLD:
+            # --- This packet is PART of the current burst ---
+            current_burst_packets += 1
+            current_burst_volume += pkt_size
+        else:
+            # --- This packet is the START of a new burst ---
+            # 1. Save the previous burst
+            burst_duration = last_packet_time - current_burst_start_time
+            burst_packet_counts.append(current_burst_packets)
+            burst_volumes.append(current_burst_volume)
+            burst_durations.append(burst_duration)
+
+            # 2. Save the idle time that just ended
+            burst_idle_times.append(idle_time)
+
+            # 3. Reset for the new burst
+            current_burst_packets = 1
+            current_burst_volume = pkt_size
+            current_burst_start_time = pkt_time
+
+        # Update the time of the last packet seen
+        last_packet_time = pkt_time
+
+    # 6. Save the *final* burst after the loop
+    burst_duration = last_packet_time - current_burst_start_time
+    # ... (append burst terakhir ke list) ...
+    \end{minted}
+    \captionsetup{font=small}
+    \caption{Potongan kode dari \texttt{gamma.py} menunjukkan logika deteksi batas burst.}
+    \label{lst:snippet_gamma1}
+\end{listing}
+
+Jika \texttt{idle\_time} kurang dari ambang batas (1.0 detik), paket saat ini ditambahkan ke \textit{burst} yang sedang berjalan. Jika tidak, \textit{burst} sebelumnya disimpan, dan \texttt{idle\_time} dicatat sebagai waktu jeda antar-\textit{burst}.
+
+Setelah semua paket diproses, skrip memanggil fungsi \texttt{calculate\_stats} (yang sama dengan yang digunakan pada komponen $\beta$) pada empat daftar yang dihasilkan:
+\begin{itemize}
+    \item \texttt{burst\_packet\_counts}: Daftar jumlah paket untuk setiap burst.
+    \item \texttt{burst\_volumes}: Daftar total volume (byte) untuk setiap burst.
+    \item \texttt{burst\_durations}: Daftar durasi (detik) untuk setiap burst.
+    \item \texttt{burst\_idle\_times}: Daftar waktu jeda (detik) antar burst.
+\end{itemize}
+
+Menghitung 9 statistik (count, mean, std, dll.) untuk 4 daftar ini menghasilkan $9 \times 4 = 36$ fitur. Ditambah dengan satu fitur tambahan, \texttt{total\_burst\_count}, komponen $\gamma$ akhir terdiri dari \textbf{37 fitur} statistik level \textit{burst}.
+
+\subsection{Integrasi Komponen HFV dan Pembuatan Basis Data Fitur}
+\label{subsec:integrasi_hfv}
+
+Setelah ketiga komponen fitur diekstraksi secara terpisah dalam tiga \textit{pipeline} yang independen, langkah terakhir adalah mengintegrasikannya menjadi satu vektor fitur hibrida (HFV) tunggal. Proses ini diimplementasikan dalam skrip \texttt{merge\_hfv.py}.
+
+Tujuan dari skrip ini adalah untuk membuat satu basis data (file \texttt{.csv}) di mana setiap baris mewakili satu \textit{flow} yang unik, dan kolom-kolomnya berisi:
+\begin{enumerate}
+    \item Informasi label (misalnya, \texttt{filename}, \texttt{application}, \texttt{category}).
+    \item 128 fitur dari komponen $\alpha$ (pola \textit{byte} 1D-CNN).
+    \item 39 fitur dari komponen $\beta$ (statistik level \textit{flow}).
+    \item 37 fitur dari komponen $\gamma$ (statistik level \textit{burst}).
+\end{enumerate}
+
+Penggabungan ini menghasilkan vektor HFV $\Omega$ final dengan total $128 + 39 + 37 = \mathbf{204}$ fitur untuk setiap \textit{flow}.
+
+Proses penggabungan ini diringkas dalam Kode \ref{lst:merge_hfv}. Kunci dari proses ini adalah penggunaan \texttt{filename} sebagai \textit{primary key} unik untuk menggabungkan semua \textit{DataFrame} komponen.
+
+\begin{listing}[H]
+\setstretch{1}
+\begin{algorithm}[H]
+\caption{Pseudocode Integrasi Komponen HFV}
+\begin{algorithmic}[1]
+    \State \textbf{Input:}
+    \State \quad $File_{label} \gets$ \texttt{VPNOnly-cnn\_payload\_labels.csv}
+    \State \quad $File_{\alpha} \gets$ \texttt{VPNOnly-alpha\_double\_prime\_component\_v3.csv}
+    \State \quad $File_{\beta} \gets$ \texttt{VPNOnly-delta\_component\_v2.csv}
+    \State \quad $File_{\gamma} \gets$ \texttt{VPNOnly-gamma\_prime\_component\_v2.csv}
+    \State \textbf{Output:} $File_{HFV} \gets$ \texttt{VPNOnly-final\_PESV\_dataset\_v3.csv}
+    
+    \State \Comment{Muat semua komponen ke dalam DataFrame pandas}
+    \State $df_{label} \gets \textbf{load\_csv}(File_{label})$ \Comment{Basis label (9,720 baris)}
+    \State $df_{\alpha} \gets \textbf{load\_csv}(File_{\alpha})$ \Comment{Fitur Alpha (9,720 baris)}
+    \State $df_{\beta} \gets \textbf{load\_csv}(File_{\beta})$ \Comment{Fitur Beta (~10k baris)}
+    \State $df_{\gamma} \gets \textbf{load\_csv}(File_{\gamma})$ \Comment{Fitur Gamma (~10k baris)}
+    
+    \State \Comment{Persiapan merge: Hapus kolom label duplikat dari Beta dan Gamma}
+    \State $cols\_to\_drop \gets$ ['application', 'category', 'binary\_type']
+    \State $df_{\beta\_feat} \gets \textbf{drop\_columns}(df_{\beta}, cols\_to\_drop)$
+    \State $df_{\gamma\_feat} \gets \textbf{drop\_columns}(df_{\gamma}, cols\_to\_drop)$
+    
+    \State \Comment{Lakukan penggabungan inner-join sekuensial}
+    \State $df_{merged} \gets \textbf{merge}(df_{label}, df_{\alpha}, on='filename', how='inner')$
+    \State $df_{merged} \gets \textbf{merge}(df_{merged}, df_{\beta\_feat}, on='filename', how='inner')$
+    \State $df_{final} \gets \textbf{merge}(df_{merged}, df_{\gamma\_feat}, on='filename', how='inner')$
+    
+    \State \Comment{Simpan hasil akhir}
+    \State $\textbf{save\_csv}(df_{final}, File_{HFV})$
+\end{algorithmic}
+\end{algorithm}
+\captionsetup{font=small}
+\caption{Pseudocode Integrasi Komponen HFV}
+\label{lst:merge_hfv}
+\end{listing}
+
+\subsubsection{Implementasi Penggabungan}
+Dalam implementasi \texttt{merge\_hfv.py}, \textit{file} label yang dihasilkan oleh \textit{pipeline} $\alpha$ (\texttt{cnn\_payload\_labels.csv}) sengaja dipilih sebagai basis data utama. Ini karena \textit{pipeline} $\alpha$ (ekstraksi \textit{payload}) adalah yang paling ketat; \textit{flow} yang tidak memiliki \textit{payload} (misalnya, \textit{flow} TCP yang kosong) telah dibuang pada fase tersebut.
+
+File komponen $\beta$ dan $\gamma$ mungkin berisi \textit{flow} yang tidak ada di \textit{pipeline} $\alpha$, sehingga mereka juga memuat kolom label mereka sendiri. Untuk mencegah konflik kolom saat penggabungan, kolom-kolom label duplikat ini harus dihapus terlebih dahulu, seperti yang ditunjukkan pada Kode \ref{lst:snippet_merge1}.
+
+\begin{listing}[H]
+\setstretch{1}
+    \begin{minted}[
+        fontsize=\footnotesize
+    ]{python}
+# Potongan kode dari merge_hfv.py
+
+    # The delta and gamma files contain redundant label columns.
+    # We must drop them before merging to avoid conflicts.
+    label_cols_to_drop = ['application', 'category', 'binary_type']
+
+    # Select only filename + delta features
+    delta_feature_cols = [col for col in df_delta.columns if col not in label_cols_to_drop]
+    df_delta_features_only = df_delta[delta_feature_cols]
+
+    # Select only filename + gamma' features
+    gamma_feature_cols = [col for col in df_gamma.columns if col not in label_cols_to_drop]
+    df_gamma_features_only = df_gamma[gamma_feature_cols]
+    \end{minted}
+    \captionsetup{font=small}
+    \caption{Potongan kode dari \texttt{merge\_hfv.py} menunjukkan penghapusan kolom label duplikat.}
+    \label{lst:snippet_merge1}
+\end{listing}
+
+Setelah disiapkan, penggabungan akhir dilakukan menggunakan fungsi \texttt{pandas.merge} dengan metode \texttt{how='inner'}. Penggunaan \textit{inner join} (gabung internal) memastikan bahwa hanya \textit{flow} yang \texttt{filename}-nya ada di \textit{semua} komponen (label, $\alpha$, $\beta$, dan $\gamma$) yang akan dimasukkan ke dalam basis data final. Langkah penggabungan krusial ini ditunjukkan pada Kode \ref{lst:snippet_merge2}.
+
+\begin{listing}[H]
+\setstretch{1}
+    \begin{minted}[
+        fontsize=\footnotesize
+    ]{python}
+# Potongan kode dari merge_hfv.py
+
+    print("\nMerging... (using 'filename' as the key)")
+
+    # 1. Merge Base Labels + Alpha'' features
+    df_merged = pd.merge(df_base_labels, df_alpha_pp, on='filename', how='inner')
+    print(f"Shape after merging Alpha'': {df_merged.shape}")
+
+    # 2. Merge with Delta features
+    df_merged = pd.merge(df_merged, df_delta_features_only, on='filename', how='inner')
+    print(f"Shape after merging Delta:  {df_merged.shape}")
+
+    # 3. Merge with Gamma' features
+    df_final = pd.merge(df_merged, df_gamma_features_only, on='filename', how='inner')
+    print(f"Shape after merging Gamma': {df_final.shape}")
+
+    # --- Save Final Dataset ---
+    print(f"\nAssembly complete. Saving final dataset...")
+    df_final.to_csv(OUTPUT_FILE, index=False)
+    \end{minted}
+    \captionsetup{font=small}
+    \caption{Potongan kode dari \texttt{merge\_hfv.py} menunjukkan proses \textit{inner merge} sekuensial.}
+    \label{lst:snippet_merge2}
+\end{listing}
+
+Hasil akhir dari proses ini adalah satu file \texttt{final\_HFV\_dataset.csv}. Basis data fitur inilah yang kemudian digunakan sebagai input untuk melatih dan mengevaluasi berbagai model \textit{machine learning} yang akan dibahas pada bab selanjutnya.
