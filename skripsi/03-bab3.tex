@@ -22,8 +22,6 @@ Tabel \ref{tab:dataset_distribution} menunjukkan distribusi kelas pada ketiga tu
 
 \begin{table}[h]
     \centering
-    \caption{Distribusi Kelas pada Dataset ISCXVPN2016 \citep{park2024fast}}
-    \label{tab:dataset_distribution}
     \setlength{\tabcolsep}{6pt} % mengurangi jarak antar kolom
     \renewcommand{\arraystretch}{1.2} % sedikit longgar untuk keterbacaan
     \begin{tabularx}{\linewidth}{lX}
@@ -35,6 +33,8 @@ Tabel \ref{tab:dataset_distribution} menunjukkan distribusi kelas pada ketiga tu
         Aplikasi (16 kelas) & Skype, ICQ, Hangout, Facebook, Email, Gmail, FTP, SCP, SFTP, Netflix, Spotify, Vimeo, YouTube, AIM Chat, VOIPBuster, BitTorrent \\
         \bottomrule
     \end{tabularx}
+    \caption{Distribusi Kelas pada Dataset ISCXVPN2016 \citep{park2024fast}}
+    \label{tab:dataset_distribution}
 \end{table}
 
 Dengan tiga tingkat klasifikasi ini, dataset ISCXVPN2016 menyediakan kerangka kerja evaluasi yang komprehensif dan representatif untuk penelitian network traffic classification, terutama dalam konteks trafik terenkripsi yang semakin berkembang.
@@ -51,62 +51,29 @@ Langkah pertama adalah mengubah file \texttt{.pcap} mentah menjadi \textit{bidir
 
 Untuk tugas ini, \textit{tool} SplitCap digunakan. SplitCap dipilih karena merupakan \textit{tool} khusus yang teroptimasi (ditulis dalam C/C++) untuk menangani file \texttt{.pcap} besar secara efisien dan akurat dalam mengelola sesi, yang esensial untuk mereproduksi metodologi penelitian.
 
-Untuk mengotomatisasi pemrosesan pada seluruh dataset, sebuah skrip Python digunakan untuk memanggil SplitCap pada setiap file \texttt{.pcap}, seperti yang ditunjukkan pada Listing~\ref{lst:splitcap_automation}. Perlu dicatat penambahan argumen \texttt{-p 500} yang penting untuk membatasi sesi paralel dan menghindari galat ``Too many open files''.
+Untuk mengotomatisasi pemrosesan pada seluruh dataset, sebuah skrip Python digunakan untuk memanggil SplitCap pada setiap file \texttt{.pcap}, seperti yang ditunjukkan pada Kode~\ref{lst:splitcap_automation}. Perlu dicatat penambahan argumen \texttt{-p 500} yang penting untuk membatasi sesi paralel dan menghindari galat ``Too many open files''.
 
 \begin{listing}[H]
-\setstretch{1}
-\begin{minted}[fontsize=\footnotesize, linenos]{python}
-def run_splitcap(pcap_file_path, output_dir):
-    """Constructs and runs the SplitCap command for a single pcap file.
-    Splits the file into bidirectional flows (sessions).
-
-    UPDATED: Includes the -p argument to limit parallel file handles.
-    """
-    # From the documentation, the argument for bidirectional flows is 'session'
-    split_argument = 'session'
-
-    # Set a limit for parallel sessions to prevent "Too many open files" error
-    parallel_sessions_limit = '500'
-
-    # The command to execute in WSL
-    command = [
-        'mono',
-        SPLITCAP_EXECUTABLE,
-        '-r', pcap_file_path,
-        '-o', output_dir,
-        '-s', split_argument,
-        '-p', parallel_sessions_limit  # <-- THIS IS THE NEW ARGUMENT
-    ]
-
-    print(f"-> Processing: {pcap_file_path}")
-    print(f"   Command: {' '.join(command)}")
-
-    try:
-        # Execute the command
-        result = subprocess.run(
-            command,
-            check=True,       # Raises exception if command fails
-            capture_output=True,
-            text=True
-        )
-        print(f"   Success! Output saved to: {output_dir}")
-
-    except FileNotFoundError:
-        print("\n [ERROR] 'mono' command not found.")
-        print("Please ensure Mono is installed...")
-        return False
-
-    except subprocess.CalledProcessError as e:
-        print(f"\n [ERROR] SplitCap failed for file: {pcap_file_path}")
-        print(f"   Return Code: {e.returncode}")
-        print(f"   Error Output:\n{e.stderr}")
-        return False
-
-    return True
-\end{minted}
-\captionsetup{font=small}
-\caption{Skrip Python untuk otomatisasi konversi \texttt{.pcap} ke \textit{flow} menggunakan SplitCap.}
-\label{lst:splitcap_automation}
+    \setstretch{1}    
+    \begin{algorithmic}[1] % [1] adds line numbers
+        \Procedure{RunSplitCap}{$pcap\_file\_path, output\_dir$}
+            \State $split\_argument \gets \text{'session'}$ \Comment{Mode bidirectional flows}
+            \State $parallel\_limit \gets \text{'500'}$ \Comment{Limit file handles}
+            
+            \State $command \gets$ list()
+            \State $command.append(\text{'mono'})$
+            \State $command.append(\text{SPLITCAP\_EXECUTABLE})$
+            \State $command.append(\text{'-r'}, pcap\_file\_path)$
+            \State $command.append(\text{'-o'}, output\_dir)$
+            \State $command.append(\text{'-s'}, split\_argument)$
+            \State $command.append(\text{'-p'}, parallel\_limit)$
+            
+            \State \Call{SystemExecute}{$command$}
+            \State \Return \textbf{True}
+        \EndProcedure
+    \end{algorithmic}
+        \caption{Otomasi Command SplitCap} 
+    \label{lst:splitcap_automation}
 \end{listing}
 
 \subsubsection{Pembersihan Awal (Rule A \& B)}
@@ -128,60 +95,65 @@ Langkah terakhir adalah penyaringan tambahan yang diimplementasikan oleh \citep{
 
 \medskip
 \noindent\textbf{Implementasi Penyaringan (Rule A, B, dan C)} \\
-Ketiga aturan penyaringan (A, B, dan C) diimplementasikan dalam satu skrip Python menggunakan Scapy untuk membaca dan menganalisis setiap \textit{flow} \texttt{.pcap} satu per satu. Fungsi inti dari proses validasi ini ditunjukkan pada Listing~\ref{lst:scapy_filtering}.
+Ketiga aturan penyaringan (A, B, dan C) diimplementasikan dalam satu skrip Python menggunakan Scapy untuk membaca dan menganalisis setiap \textit{flow} \texttt{.pcap} satu per satu. Fungsi inti dari proses validasi ini ditunjukkan pada Kode~\ref{lst:scapy_filtering}.
 
 \begin{listing}[H]
-\setstretch{1}
-\begin{minted}[fontsize=\footnotesize, linenos]{python}
-def is_flow_valid_final(pcap_file_path):
-    """Analyzes a single flow pcap file and applies ALL filtering rules
-    (A, B, and C) to determine if it belongs in the final dataset.
+    \setstretch{1}    
+    \begin{algorithmic}[1] % [1] adds line numbers
+        
+        \State $DisallowedLayers \gets \{DNS, NTP, DHCP, BOOTP\}$
+        \State $DisallowedPorts \gets \{137, 1900, 5353, 5355\}$
 
-    Returns a tuple: (is_valid, reason_for_invalidation)
-    """
-    try:
-        packets = rdpcap(pcap_file_path)
-    except Exception as e:
-        return False, f"Scapy could not read file. Error: {e}"
+        \Procedure{IsFlowValid}{$pcap\_path$}
+            \State $packets \gets \Call{ReadPcap}{pcap\_path}$
+            \If{$packets$ is empty} \Return \textbf{false} \EndIf
+            
+            \State $first \gets packets[0]$
+            \State \Comment{Rule B: Validasi TCP Handshake (SYN flag)}
+            \If{$first$ is TCP \textbf{and} \text{'S'} $\notin$ $first.flags$}
+                \State \Return \textbf{false}
+            \EndIf
 
-    if not packets:
-        return False, "File is empty or corrupt"
+            \State \Comment{Iterasi paket untuk Rule A dan C}
+            \For{\textbf{each} $pkt$ \textbf{in} $packets$}
+                \State \Comment{Rule A: Cek Layer Terlarang}
+                \If{$pkt$ has layer $\in DisallowedLayers$} 
+                    \State \Return \textbf{false} 
+                \EndIf
 
-    # --- Implement ALL Filtering Rules ---
-    first_packet = packets[0]
+                \If{$pkt$ is UDP}
+                    \State \Comment{Rule A: Cek Port Terlarang}
+                    \If{$pkt.sport \in DisallowedPorts$ \textbf{or} $pkt.dport \in DisallowedPorts$}
+                        \State \Return \textbf{false}
+                    \EndIf
+                    
+                    \State \Comment{Rule C: Cek UDP Beacon Broadcast}
+                    \If{$pkt.dst == \text{'255.255.255.255'}$ \textbf{and} $\text{"Beacon\textasciitilde"} \in pkt.payload$}
+                        \State \Return \textbf{false}
+                    \EndIf
+                \EndIf
+            \EndFor
 
-    # Rule B: TCP 3-Way Handshake Check
-    if TCP in first_packet:
-        if len(packets) > 4 and 'S' not in first_packet[TCP].flags:
-            return False, "Rule B Failed: Invalid TCP handshake start"
+            \State \Return \textbf{true}
+        \EndProcedure
 
-    # Loop through all packets to check Rules A and C
-    for pkt in packets:
-        # Rule A (Part 1): Disallowed protocols
-        for protocol_layer in DISALLOWED_PROTOCOLS:
-            if protocol_layer in pkt:
-                return False, f"Rule A Failed: Disallowed protocol ({protocol_layer.name})"
+        \Statex % Empty line for separation
 
-        if UDP in pkt:
-            # Rule A (Part 2): Disallowed UDP ports
-            if pkt[UDP].sport in DISALLOWED_UDP_PORTS or pkt[UDP].dport in DISALLOWED_UDP_PORTS:
-                return False, "Rule A Failed: Disallowed UDP port used"
+        \Procedure{MainFiltering}{}
+            \State \Call{CreateDirectory}{$OutputDirectory$}
+            
+            \For{\textbf{each} $file$ \textbf{in} $InputDirectory$}
+                \State $isValid \gets \Call{IsFlowValid}{file}$
+                
+                \If{$isValid$ \textbf{is true}}
+                    \State \Call{CopyFile}{$file, OutputDirectory$}
+                \EndIf
+            \EndFor
+        \EndProcedure
 
-            # Rule C: UDP Beacon Check
-            if IP in pkt and pkt[IP].dst == '255.255.255.255':
-                try:
-                    payload = bytes(pkt[UDP].payload)
-                    if b'Beacon~' in payload:
-                        return False, "Rule C Failed: UDP Beacon flow detected"
-                except Exception:
-                    pass
-
-    # If all checks passed, flow is valid
-    return True, "Valid"
-\end{minted}
-\captionsetup{font=small}
-\caption{Fungsi validasi \textit{flow} menggunakan Scapy untuk menerapkan Rule A, B, dan C.}
-\label{lst:scapy_filtering}
+    \end{algorithmic}
+        \caption{Penyaringan \textit{flow} menggunakan Scapy untuk menerapkan Rule A, B, dan C.} 
+    \label{lst:scapy_filtering}
 \end{listing}
 
 Setelah ketiga langkah pra-pemrosesan ini selesai, dataset final yang bersih berisi total \textbf{13.487 \textit{flow}}. Dataset yang telah difilter secara ketat inilah yang kemudian digunakan untuk semua proses ekstraksi fitur dan pelatihan model selanjutnya dalam penelitian ini.
@@ -237,34 +209,49 @@ Solusinya adalah melakukan proses \textit{pick-and-choose} dengan memilih 6 apli
     \item \textbf{BitTorrent} (363 flow): Satu-satunya perwakilan untuk P2P.
 \end{itemize}
 
-Proses \textit{pick-and-choose} ini menghasilkan Dataset v2 dengan total \textbf{10.284 \textit{flow}}. Proses penyaringan ini diimplementasikan dengan skrip Python yang membaca 13.487 \textit{flow} dari direktori sumber dan hanya menyalin \textit{flow} yang termasuk dalam 6 aplikasi target ke direktori tujuan. Logika inti dari skrip penyaringan ditunjukkan pada Listing \ref{lst:filter_v2_pseudo}.
+Proses \textit{pick-and-choose} ini menghasilkan Dataset v2 dengan total \textbf{10.284 \textit{flow}}. Proses penyaringan ini diimplementasikan dengan skrip Python yang membaca 13.487 \textit{flow} dari direktori sumber dan hanya menyalin \textit{flow} yang termasuk dalam 6 aplikasi target ke direktori tujuan. Logika inti dari skrip penyaringan ditunjukkan pada Kode \ref{lst:filter_v2_pseudo}.
 
 \begin{listing}[H]
-\setstretch{1}
-\begin{minted}[fontsize=\footnotesize, linenos, breaklines]{text}
-Dataset v2 Filter (13,487 → 10,284)
------------------------------------
-Input: SRC, DST, KEYWORD_MAP, TARGET_APPS = {Skype, Email, SCP, VOIPBuster, YouTube, BitTorrent}
+    \setstretch{1}    
+    \begin{algorithmic}[1] % [1] adds line numbers
+        
+        \State $TargetApps \gets \{\text{'Skype'}, \text{'Email'}, \text{'SCP'}, \text{'VOIPBuster'}, \text{'YouTube'}, \text{'BitTorrent'}\}$
+        
+        \State \Comment{Map keyword ke nama aplikasi (Urutan penting: spesifik $\to$ umum)}
+        \State $KeywordMap \gets \textbf{OrderedMap}$
+        \State $KeywordMap.\text{add}(\text{'facebook\_chat'}, \text{'Facebook'})$
+        \State $KeywordMap.\text{add}(\text{'gmail'}, \text{'Gmail'})$
+        \State \dots \Comment{Dan seterusnya sesuai definisi Python}
+        
+        \Statex % Empty line
 
-filter_dataset():
-    files = listdir(SRC) or fatal("read error")
-    cnt = {copied:0, skipped:0}
-    
-    for f in files:
-        app = next((a for k,(a,_) in KEYWORD_MAP if k in f.lower()), None)
-        if app in TARGET_APPS: copy(SRC+f, DST+f); cnt.copied++
-        else: cnt.skipped++
-    
-    Print(f"Copied: {cnt.copied}, Skipped: {cnt.skipped}")
-    Print("SUCCESS" if cnt.copied == 10284 else "WARNING: mismatch")
+        \Procedure{FilterDatasetV2}{}
+            \State \Call{CreateDirectory}{$DestDir$}
+            \State $files \gets \Call{ListFiles}{$SourceDir$}$
+            
+            \For{\textbf{each} $filename$ \textbf{in} $files$}
+                \State $lowerName \gets \Call{ToLower}{$filename$}$
+                \State $foundApp \gets \textbf{null}$
+                
+                \State \Comment{Identifikasi aplikasi berdasarkan keyword}
+                \For{$(keyword, appName)$ \textbf{in} $KeywordMap$}
+                    \If{$keyword$ \textbf{in} $lowerName$}
+                        \State $foundApp \gets appName$
+                        \State \textbf{break} \Comment{Berhenti pada kecocokan pertama}
+                    \EndIf
+                \EndFor
+                
+                \State \Comment{Salin file jika aplikasi termasuk dalam target}
+                \If{$foundApp \neq \textbf{null}$ \textbf{and} $foundApp \in TargetApps$}
+                    \State \Call{CopyFilePreserveMetadata}{$filename, SourceDir, DestDir$}
+                \EndIf
+                
+            \EndFor
+        \EndProcedure
 
-Main:
-    if __name__ == "__main__":
-        filter_dataset()
-\end{minted}
-\captionsetup{font=small}
-\caption{Pseudocode dari logika inti skrip Python untuk memfilter 13.487 \textit{flow} bersih menjadi Dataset v2 (10.284 \textit{flow}) berdasarkan 6 aplikasi yang telah ditentukan.}
-\label{lst:filter_v2_pseudo}
+    \end{algorithmic}
+        \caption{Penyaringan 13.487 \textit{flow} bersih menjadi Dataset v2 (10.284 \textit{flow}) berdasarkan 6 aplikasi yang telah ditentukan.} 
+    \label{lst:filter_v2_pseudo}
 \end{listing}
 
 Setelah proses kurasi ini selesai, distribusi kelas pada Dataset v2 (10.284 \textit{flow}) menjadi lebih seimbang, meskipun masih menunjukkan ketidakseimbangan yang wajar, seperti terlihat pada Gambar \ref{fig:v2_dist_after}. Dataset v2 (VPN/Non-VPN) inilah yang digunakan sebagai \textit{full dataset}, selain \textit{VPN Only} dataset yang akan dijelaskan di bagian berikutnya.
@@ -313,53 +300,61 @@ Untuk memaksimalkan tumpang tindih ini, 9 aplikasi dipilih:
     \item \textbf{Perwakilan Kategori Wajib:} BitTorrent (363 \textit{flow}), Email (137 \textit{flow})
 \end{itemize}
 
-Berbeda dengan Dataset v2 yang disalin secara fisik, dataset ini difilter secara dinamis saat runtime menggunakan skrip klasifikasi utama. Konfigurasi skrip diatur ke \texttt{EXPERIMENT\_MODE = "VPN\_ONLY"} dan \texttt{TARGET\_APPS} diisi dengan 9 aplikasi yang dipilih, seperti ditunjukkan pada Listing \ref{lst:filter_vpnonly_pseudo}.
+Berbeda dengan Dataset v2 yang disalin secara fisik, dataset ini difilter secara dinamis saat runtime menggunakan skrip klasifikasi utama. Konfigurasi skrip diatur ke \texttt{EXPERIMENT\_MODE = "VPN\_ONLY"} dan \texttt{TARGET\_APPS} diisi dengan 9 aplikasi yang dipilih, seperti ditunjukkan pada Kode \ref{lst:filter_vpnonly_pseudo}.
 
 \begin{listing}[H]
-\setstretch{1}
-\begin{minted}[fontsize=\footnotesize, linenos, breaklines]{text}
-VPN Dataset Filter (9 Apps)
----------------------------
-
-Input: SOURCE_DIR, DEST_DIR, KEYWORD_MAP, TARGET_APPS = {Skype, Hangout, Facebook, BitTorrent, FTP, Email, YouTube, Spotify, Netflix}
-
-filter_and_copy():
-    Print(f"Source: {SOURCE_DIR}\nDest: {DEST_DIR}\nFilter: VPN-only")
-    start = now()
-    
-    mkdir(DEST_DIR) or fatal("mkdir failed")
-    files = listdir(SOURCE_DIR) or fatal("listdir failed")
-    Print(f"{len(files)} files total")
-    
-    cnt = {proc:0, vpn:0, match:0, copy:0, skip:0}
-    
-    for f in files:
-        if !f.endswith(".pcap"): cnt.skip++; continue
-        cnt.proc++
-        if cnt.proc % 1000 == 0: Print(f"{cnt.proc} processed")
+    \setstretch{1}    
+    \begin{algorithmic}[1] % [1] adds line numbers
         
-        f_l = f.lower()
-        if !f_l.startswith("vpn_"): continue
-        cnt.vpn++
+        \State $TargetApps \gets \{\text{'Skype'}, \text{'Hangout'}, \text{'Facebook'},$
+\Statex \hspace{6.5em} $\text{'BitTorrent'}, \text{'FTP'}, \text{'Email'},$ 
+\Statex \hspace{6.5em} $\text{'YouTube'}, \text{'Spotify'}, \text{'Netflix'}\}$
         
-        app = next((a for k,(a,_) in KEYWORD_MAP if k in f_l), None)
-        if app in TARGET_APPS:
-            cnt.match++
-            if copy(SOURCE_DIR+f, DEST_DIR+f): cnt.copy++
-            else: Print(f"Error copying {f}")
-    
-    Print(f"Finished in {now()-start}s\n{cnt}")
+        \State \Comment{Map keyword ke nama aplikasi (OrderedMap: Spesifik ke Umum)}
+        \State $KeywordMap \gets \textbf{new OrderedMap}$
+        \State $KeywordMap.\text{add}(\text{'facebook\_chat'}, \text{'Facebook'})$
+        \State $KeywordMap.\text{add}(\text{'hangouts\_video'}, \text{'Hangout'})$
+        \State \dots \Comment{Inisialisasi seluruh keyword mapping}
+        
+        \Statex % Empty line
 
-Main:
-    if __name__ == "__main__":
-        if !GoogleDrive.mounted(): Print("Mount Drive first")
-        else: filter_and_copy()
-\end{minted}
-\captionsetup{font=small}
-\caption{Pseudocode dari skrip Python untuk memfilter dataset VPN-only menjadi 9 aplikasi representatif, mencakup semua 6 kategori aplikasi utama.}
-\label{lst:filter_vpnonly_pseudo}
+        \Procedure{FilterVPNOnlyDataset}{}
+            \State \Call{CreateDirectory}{$DestDir$}
+            \State $files \gets \Call{ListFiles}{$SourceDir$}$
+            
+            \For{\textbf{each} $filename$ \textbf{in} $files$}
+                \If{$filename$ does not end with \text{'.pcap'}}
+                    \State \textbf{continue}
+                \EndIf
+
+                \State $lowerName \gets \Call{ToLower}{$filename$}$
+                
+                \State \Comment{Kriteria 1: File harus memiliki prefix 'vpn\_'}
+                \If{\textbf{not} $lowerName.\text{startsWith}(\text{'vpn\_'})$}
+                    \State \textbf{continue}
+                \EndIf
+
+                \State \Comment{Identifikasi aplikasi berdasarkan keyword}
+                \State $foundApp \gets \textbf{null}$
+                \For{$(keyword, appName)$ \textbf{in} $KeywordMap$}
+                    \If{$keyword$ \textbf{in} $lowerName$}
+                        \State $foundApp \gets appName$
+                        \State \textbf{break} \Comment{Ambil kecocokan pertama}
+                    \EndIf
+                \EndFor
+
+                \State \Comment{Kriteria 2: Aplikasi harus termasuk dalam 9 target}
+                \If{$foundApp \neq \textbf{null}$ \textbf{and} $foundApp \in TargetApps$}
+                    \State \Call{CopyFilePreserveMetadata}{$filename, SourceDir, DestDir$}
+                \EndIf
+                
+            \EndFor
+        \EndProcedure
+
+    \end{algorithmic}
+        \caption{Penyaringan dataset VPN-only menjadi 9 aplikasi representatif, mencakup semua 6 kategori aplikasi utama.} 
+    \label{lst:filter_vpnonly_pseudo}
 \end{listing}
-
 
 Proses penyaringan dinamis ini menghasilkan dataset final ‘Khusus VPN’ yang terdiri dari 2.730 \textit{flow} VPN. Distribusi kelas untuk dataset ini ditunjukkan pada Gambar \ref{fig:vpn_only_dist}.
 
@@ -429,46 +424,61 @@ Proses untuk menghasilkan vektor fitur $\alpha$ dibagi menjadi dua fase utama, y
 Fase pertama, yang diimplementasikan dalam skrip \texttt{alpha\_1.py}, bertanggung jawab untuk mengubah \textit{flow} \texttt{.pcap} bersih (hasil pra-pemrosesan) menjadi format dataset yang siap digunakan oleh CNN. Logika inti dari skrip ini dijelaskan dalam Kode \ref{lst:pseudo_alpha1}.
 
 \begin{listing}[H]
-\setstretch{1}
-\begin{algorithm}[H]
-\begin{algorithmic}[1]
-    \State \textbf{Definisi:} N\_PACKETS $\gets 10$, PAYLOAD\_LEN $\gets 784$
-    \State \textbf{Input:} SOURCE\_DIR (direktori .pcap)
-    \State \textbf{Output:} OUTPUT\_DATA\_FILE (.npy), OUTPUT\_LABELS\_FILE (.csv)
-    \item[]
-    \Function{ProcessPcap}{file}
-        \State $matriks\_flow \gets \Call{ArrayNol}{N\_PACKETS, PAYLOAD\_LEN}$
-        \State $label \gets \Call{DapatkanLabel}{file}$
-        \State $packets \gets \Call{BacaPcap}{file}$
-        \State $idx \gets 0$
-        \For{setiap $pkt$ \textbf{in} $packets$ dan $idx < N\_PACKETS$}
-            \State $payload \gets \Call{DapatkanPayload}{pkt}$
-            \If{$payload \neq null$}
-                \State $vektor \gets \Call{ArrayNol}{PAYLOAD\_LEN}$
-                \State $n \gets \min(\Call{panjang}{payload}, PAYLOAD\_LEN)$
-                \State $vektor[0...n] \gets \Call{KonversiKeByte}{payload, n} / 255.0$
-                \State $matriks\_flow[idx] \gets vektor$
-                \State $idx \gets idx + 1$
-            \EndIf
-        \EndFor
-        \State \Return $matriks\_flow, label$
-    \EndFunction
-    \item[]
-    \Procedure{Main}{}
-        \State $files \gets \Call{DapatkanSemuaFilePcap}{SOURCE\_DIR}$
-        \State $(dataX, labelY) \gets \Call{JalankanParalel}{ProcessPcap, files}$
-        \State $arrayX \gets \Call{TumpukArray}{dataX}$
-        \State \Call{SimpanNpy}{arrayX, outputDataFile}
-        \State \Call{SimpanCsv}{labelY, outputLabelsFile}
-    \EndProcedure
-\end{algorithmic}
-\end{algorithm}
-\captionsetup{font=small}
-\caption{Pseudocode untuk Fase 1: Ekstraksi Data Payload Mentah.}
-\label{lst:pseudo_alpha1}
+    \setstretch{1}    
+    \begin{algorithmic}[1]
+        \State $N_{pkt}, L_{pay} \gets 10, 784$ \Comment{Konfigurasi dimensi input CNN}
+        
+        \Procedure{ProcessFile}{$filepath$}
+            \State $fname \gets \Call{Basename}{filepath}$
+            \State \Comment{Tentukan Label (App, Category, Binary) dari nama file}
+            \State $labels \gets \Call{MapKeywordToLabel}{fname, KeywordMap}$
+            
+            \State $matrix \gets \Call{Zeros}{N_{pkt}, L_{pay}}$
+            \State $packets \gets \Call{ReadPcap}{filepath}$
+            \State $count \gets 0$
+
+            \For{\textbf{each} $pkt$ \textbf{in} $packets$}
+                \If{$count \geq N_{pkt}$} \textbf{break} \EndIf
+                
+                \State $payload \gets \Call{GetTCPUDPPayload}{pkt}$
+                \If{$payload$ is empty} \textbf{continue} \EndIf
+
+                \State \Comment{Normalisasi byte (0-255) ke float (0.0-1.0) \& potong/padding}
+                \State $normData \gets \Call{NormalizeAndPad}{payload, L_{pay}}$
+                \State $matrix[count] \gets normData$
+                \State $count \gets count + 1$
+            \EndFor
+
+            \Return $(matrix, labels)$ \textbf{if} $count > 0$ \textbf{else} \textbf{null}
+        \EndProcedure
+
+        \Statex 
+
+        \Procedure{MainExtraction}{}
+            \State $files \gets \Call{ListFiles}{SourceDir}$
+            \State $dataList, labelList \gets \textbf{new List}, \textbf{new List}$
+
+            \State \Comment{Eksekusi paralel untuk mempercepat proses IO}
+            \State $results \gets \Call{ParallelExec}{ProcessFile, files}$
+
+            \For{\textbf{each} $res$ \textbf{in} $results$}
+                \If{$res \neq \textbf{null}$}
+                    \State $dataList.\text{add}(res.matrix)$
+                    \State $labelList.\text{add}(res.labels)$
+                \EndIf
+            \EndFor
+
+            \State \Comment{Susun Tensor 3D (Samples, 10, 784) dan simpan}
+            \State $X \gets \Call{Stack}{dataList}$; $Y \gets \Call{DataFrame}{labelList}$
+            \State \Call{SaveNumpy}{X, OutputNpy}; \Call{SaveCSV}{Y, OutputCsv}
+        \EndProcedure
+
+    \end{algorithmic}
+        \caption{Fase 1: Ekstraksi Data Payload Mentah.} 
+    \label{lst:pseudo_alpha1}
 \end{listing}
 
-Implementasi spesifik dari langkah ekstraksi dan normalisasi \textit{payload} (langkah 3, 4, dan 5 dalam pseudocode) ditunjukkan pada Kode \ref{lst:snippet_alpha1}. Bagian ini adalah inti dari skrip \texttt{alpha\_1.py}, di mana setiap byte dinormalisasi menjadi nilai antara 0.0 dan 1.0.
+Implementasi spesifik dari langkah ekstraksi dan normalisasi \textit{payload} ditunjukkan pada Kode \ref{lst:snippet_alpha1}. Bagian ini adalah inti dari skrip \texttt{alpha\_1.py}, di mana setiap byte dinormalisasi menjadi nilai antara 0.0 dan 1.0.
 
 \begin{listing}[H]
 \setstretch{1}
@@ -535,45 +545,60 @@ Hasil akhir dari fase ini adalah dua file:
 Fase kedua, diimplementasikan dalam \texttt{alpha\_2.py}, menggunakan data \texttt{.npy} yang dihasilkan Fase 1 untuk melatih model \textit{Deep Learning} dan mengekstrak fitur $\alpha$. Logika skrip ini diringkas dalam Kode \ref{lst:pseudo_alpha2}.
 
 \begin{listing}[H]
-\setstretch{1}
-\begin{algorithm}[H]
-\begin{algorithmic}[1]
-    \State \textbf{Definisi:} FEATURE\_VECTOR\_SIZE $\gets 128$
-    \State \textbf{Input:} DATA\_FILE (.npy), LABELS\_FILE (.csv)
-    \State \textbf{Output:} OUTPUT\_ALPHA\_V3\_FILE (.csv), OUTPUT\_ENCODER\_MODEL\_FILE (.keras)
-    \item[]
-    \Function{BuildModel}{numClasses}
-        \State $input \gets \Call{Input}{(7840, 1)}$
-        \State $x \gets \Call{Conv1D}{32} \to \Call{MaxPooling1D}{4}$
-        \State $x \gets \Call{Conv1D}{64} \to \Call{MaxPooling1D}{4}$
-        \State $x \gets \Call{Conv1D}{128} \to \Call{MaxPooling1D}{4}$
-        \State $x \gets \Call{Flatten}{x}$
-        \State $x \gets \Call{Dense}{FEATURE\_VECTOR\_SIZE, \text{name}=\text{"encoder\_output"}}$
-        \State $x \gets \Call{Dropout}{0.5}(x)$
-        \State $output \gets \Call{Dense}{numClasses, \text{activation}=\text{"softmax"}}$
-        \State $model \gets \Call{Model}{input, output}$
-        \State \Call{Compile}{model, \text{optimizer}=\text{"adam"}}
-        \State \Return $model$
-    \EndFunction
-    \item[]
-    \Procedure{Main}{}
-        \State $(X, y, labels) \gets \Call{LoadData}{}$
-        \State $X \gets \Call{Reshape}{X, (N, 7840, 1)}$
-        \State $y \gets \Call{ToCategorical}{y}$
-        \State $model \gets \Call{BuildModel}{numClasses}$
-        \State $(X_{train}, X_{val}, y_{train}, y_{val}) \gets \Call{Split}{X, y}$
-        \State \Call{Fit}{model, $X_{train}$, $y_{train}$, validation: $(X_{val}, y_{val})$}
-        \State $encoder \gets \Call{Model}{model.input, \text{layer["encoder\_output"]}}$
-        \State $features \gets \Call{Predict}{encoder, X}$ \Comment{Bentuk: (N, 128)}
-        \State $df \gets \Call{Gabung}{labels, features}$
-        \State \Call{SimpanCsv}{df, outputAlphaFile}
-        \State \Call{Save}{encoder, outputEncoderFile}
-    \EndProcedure
-\end{algorithmic}
-\end{algorithm}
-\captionsetup{font=small}
-\caption{Pseudocode untuk Fase 2: Pelatihan Encoder dan Generasi Fitur $\alpha$.}
-\label{lst:pseudo_alpha2}
+    \setstretch{1}    
+    \begin{algorithmic}[1]
+        \State $InputShape \gets (10 \times 784, 1)$ \Comment{Input sequence (7840, 1)}
+        \State $FeatureDim \gets 128$ \Comment{Dimensi vektor fitur ($alpha''$)}
+        
+        \Procedure{Build1DCNN}{$numClasses$}
+            \State $model \gets \textbf{new SequentialModel}$
+            
+            \State \Comment{Blok Konvolusi \& Pooling}
+            \State $model.\text{add}(\text{Conv1D}(32, \text{kernel}=7, \text{relu}) \to \text{MaxPool}(4))$
+            \State $model.\text{add}(\text{Conv1D}(64, \text{kernel}=5, \text{relu}) \to \text{MaxPool}(4))$
+            \State $model.\text{add}(\text{Conv1D}(128, \text{kernel}=3, \text{relu}) \to \text{MaxPool}(4))$
+            
+            \State $model.\text{add}(\text{Flatten})$
+            \State \Comment{Layer Encoder (Tempat ekstraksi fitur)}
+            \State $model.\text{add}(\text{Dense}(FeatureDim, \text{relu}, name=\text{'encoder'}))$
+            \State $model.\text{add}(\text{Dropout}(0.5))$
+            
+            \State $model.\text{add}(\text{Dense}(numClasses, \text{softmax}))$
+            \State $model.\text{compile}(\text{optimizer='adam'}, \text{loss='categorical'})$
+            \Return $model$
+        \EndProcedure
+
+        \Statex
+
+        \Procedure{TrainAndExtractFeatures}{}
+            \State \Comment{Muat data \& Reshape menjadi time-series 1D}
+            \State $X \gets \Call{LoadNpy}{DataFile}.\text{reshape}(-1, InputShape)$
+            \State $df_{labels} \gets \Call{LoadCSV}{LabelsFile}$
+            \State $Y \gets \Call{OneHotEncode}{df_{labels}.\text{application}}$
+            
+            \State \Comment{Split Data (Train: 80\%, Val: 20\%)}
+            \State $X_{tr}, X_{val}, Y_{tr}, Y_{val} \gets \Call{TrainTestSplit}{X, Y, 0.2}$
+            
+            \State $model \gets \Call{Build1DCNN}{Y.\text{uniqueClasses}}$
+            
+            \State \Comment{Latih model dengan Early Stopping}
+            \State $model.\text{fit}(X_{tr}, Y_{tr}, \text{validation}=(X_{val}, Y_{val}), \text{patience}=10)$
+            
+            \State \Comment{Buat model baru hanya sampai layer 'encoder'}
+            \State $encoder \gets \text{Model}(inputs=model.input, outputs=model.\text{getLayer}(\text{'encoder'}))$
+            \State \Call{SaveModel}{encoder, OutputModelFile}
+            
+            \State \Comment{Ekstrak fitur $\alpha$ dari seluruh dataset}
+            \State $features \gets encoder.\text{predict}(X)$ \Comment{Output shape: (N, 128)}
+            
+            \State \Comment{Gabungkan filename dengan fitur baru dan simpan}
+            \State $finalData \gets \Call{Concat}{df_{labels}.\text{filename}, features}$
+            \State \Call{SaveCSV}{finalData, OutputAlphaV3File}
+        \EndProcedure
+
+    \end{algorithmic}
+        \caption{Fase 2: Pelatihan Encoder dan Generasi Fitur $\alpha$.} 
+    \label{lst:pseudo_alpha2}
 \end{listing}
 
 Seperti dijelaskan dalam pseudocode, sebuah model 1D-CNN dibangun (Kode \ref{lst:snippet_alpha2}). Tujuan utamanya adalah untuk melatih lapisan \textit{Dense} (neuron=128) agar menjadi ekstraktor fitur yang baik. Lapisan ini diberi nama "encoder\_output" agar dapat diekstraksi dengan mudah setelah pelatihan.
@@ -1145,4 +1170,197 @@ Setelah disiapkan, penggabungan akhir dilakukan menggunakan fungsi \texttt{panda
     \label{lst:snippet_merge2}
 \end{listing}
 
-Hasil akhir dari proses ini adalah satu file \texttt{final\_HFV\_dataset.csv}. Basis data fitur inilah yang kemudian digunakan sebagai input untuk melatih dan mengevaluasi berbagai model \textit{machine learning} yang akan dibahas pada bab selanjutnya.
+Hasil akhir dari proses ini adalah satu file \texttt{final\_HFV\_dataset.csv}. Basis data fitur inilah yang kemudian digunakan sebagai input untuk melatih dan mengevaluasi berbagai model \textit{machine learning} yang akan dibahas pada bagian selanjutnya.
+
+\subsection{Arsitektur Model Machine Learning untuk Klasifikasi}
+\label{subsec:arsitektur_model}
+
+Bagian terakhir dari sistem yang diusulkan adalah arsitektur klasifikasi yang bertanggung jawab untuk memetakan vektor fitur HFV ke kelas target yang sesuai (VPN/Non-VPN, Kategori, atau Aplikasi). Berdasarkan eksperimen pendahuluan dan studi literatur, penelitian ini mengadopsi pendekatan \textit{ensemble learning} dengan metode \textit{Soft Voting}, yang menggabungkan kekuatan algoritma \textbf{Random Forest (RF)} dan \textbf{XGBoost}.
+
+Implementasi arsitektur ini terdapat dalam skrip \texttt{hfv\_final\_classifier\_soft\_voting\_best\_params.py}.
+
+\subsubsection{Pipeline Klasifikasi}
+Proses klasifikasi dirancang sebagai sebuah \textit{pipeline} sistematis yang terdiri dari beberapa tahap:
+
+\begin{enumerate}
+    \item \textbf{Pra-pemrosesan Data:}
+    \begin{itemize}
+        \item \textbf{Pembersihan Nilai:} Menangani nilai \texttt{NaN} (kosong) atau \texttt{Infinity} yang mungkin muncul dari perhitungan statistik (misalnya pembagian dengan nol) dengan menggantinya menjadi nol.
+        \item \textbf{Encoding Label:} Mengubah label target string (misalnya "Chat", "Streaming") menjadi representasi numerik menggunakan \texttt{LabelEncoder} agar dapat diproses oleh algoritma XGBoost.
+        \item \textbf{Pemisahan Data:} Membagi dataset menjadi set pelatihan (80\%) dan set pengujian (20\%) secara \textit{stratified} untuk menjaga proporsi kelas yang seimbang.
+    \end{itemize}
+    
+    \item \textbf{Standarisasi Fitur:}
+    Semua fitur dinormalisasi menggunakan \texttt{StandardScaler} untuk mengubah distribusi fitur sehingga memiliki rata-rata 0 dan standar deviasi 1. Langkah ini krusial, terutama untuk model yang sensitif terhadap skala fitur, dan merupakan praktik terbaik dalam \textit{pipeline} machine learning \citep{scikitlearn}.
+    
+    \item \textbf{Model Ensemble (Soft Voting):}
+    Inti dari arsitektur ini adalah \textit{Voting Classifier} dengan strategi \textit{'soft voting'}. Strategi ini tidak hanya menghitung suara mayoritas (hard voting), tetapi merata-ratakan probabilitas prediksi dari setiap model dasar. Hal ini memungkinkan model yang lebih "yakin" dengan prediksinya memiliki bobot lebih besar dalam keputusan akhir.
+\end{enumerate}
+
+Diagram alir proses klasifikasi ini diilustrasikan pada Gambar \ref{fig:classification_pipeline}.
+
+\begin{figure}[H]
+    \centering
+    \captionsetup{font=small}
+\includegraphics[width=\textwidth]{assets/pics/soft_voting_arch.png}
+\caption{Arsitektur pipeline klasifikasi HFV menggunakan ensemble Soft Voting.}
+    \label{fig:classification_pipeline}
+\end{figure}
+
+\subsubsection{Konfigurasi Model dan Hyperparameter}
+Pemilihan model \textbf{Random Forest} dan \textbf{XGBoost} didasarkan pada performa superior mereka dalam menangani data tabular berdimensi tinggi pada penelitian sebelumnya.
+
+Untuk mendapatkan performa optimal, parameter terbaik (\textit{best parameters}) untuk setiap model dan setiap tugas klasifikasi (Binary, Category, Application) telah ditentukan sebelumnya melalui proses \textit{Hyperparameter Tuning} yang ekstensif (menggunakan \textit{RandomizedSearchCV}). Nilai-nilai parameter ini "di-hardcode" ke dalam skrip final untuk memastikan reproduktifitas dan efisiensi eksekusi.
+
+Konfigurasi parameter terbaik yang digunakan untuk eksperimen mode \texttt{FULL} dirangkum dalam Tabel \ref{tab:best_params}.
+
+\begin{table}[H]
+    \centering
+    \caption{Parameter Terbaik untuk Ensemble Soft Voting (Mode FULL)}
+    \label{tab:best_params}
+    \resizebox{\textwidth}{!}{%
+    \begin{tabular}{@{}llll@{}}
+        \toprule
+        \textbf{Tugas} & \textbf{Model} & \textbf{Parameter Utama} & \textbf{Catatan} \\ 
+        \midrule
+        \textbf{Binary} & Random Forest & n\_est=300, depth=20, crit=entropy & Model Utama \\
+        (VPN/Non-VPN) & XGBoost & n\_est=200, lr=0.1, depth=6 & Model Pendukung \\
+        \midrule
+        \textbf{Category} & XGBoost & n\_est=100, lr=0.2, depth=10 & Model Utama \\
+        (6 Kelas) & Random Forest & n\_est=200, depth=20, crit=gini & Model Pendukung \\
+        \midrule
+        \textbf{Application} & Random Forest & n\_est=100, depth=None, crit=gini & Model Utama \\
+        (6 Kelas) & XGBoost & n\_est=200, lr=0.1, depth=6 & Model Pendukung \\
+        \bottomrule
+    \end{tabular}%
+    }
+\end{table}
+
+Implementasi konfigurasi ini dalam kode Python ditunjukkan pada Kode \ref{lst:snippet_model_params}.
+
+\begin{listing}[H]
+\setstretch{1}
+    \begin{minted}[
+        fontsize=\footnotesize
+    ]{python}
+# Potongan kode dari hfv_final_classifier_soft_voting_best_params.py
+
+HARDCODED_PARAMS = {
+    "FULL": {
+        "binary_type": {
+            # Winner: Random Forest
+            "rf": {"n_estimators": 300, "min_samples_split": 10, "max_depth": 20, "criterion": "entropy", "class_weight": "balanced"},
+            # Partner: XGBoost
+            "xgb": {"n_estimators": 200, "learning_rate": 0.1, "max_depth": 6, "subsample": 0.8, "eval_metric": "mlogloss"}
+        },
+        "category": {
+            # Winner: XGBoost
+            "xgb": {"n_estimators": 100, "learning_rate": 0.2, "max_depth": 10, "subsample": 1.0, "eval_metric": "mlogloss"},
+            # ... (RF params)
+        },
+        # ... (Application params)
+    },
+    # ... (VPN_ONLY params)
+    \end{minted}
+    \captionsetup{font=small}
+    \caption{Definisi parameter hardcoded untuk setiap tugas klasifikasi.}
+    \label{lst:snippet_model_params}
+\end{listing}
+
+\subsubsection{Algoritma Eksekusi Klasifikasi}
+Logika eksekusi utama dari sistem klasifikasi ini, mulai dari pembuatan pipeline hingga evaluasi, dijelaskan dalam Pseudocode \ref{lst:alg_classifier}.
+
+\begin{listing}[H]
+    \setstretch{1}    
+    \begin{algorithmic}[1]
+        \Require Dataset HFV (.csv), Mode Eksperimen (FULL/VPN\_ONLY)
+        \Ensure Laporan Klasifikasi (Akurasi, F1-Score)
+
+        \Procedure{GetVotingPipeline}{$task, mode$}
+            \State $params \gets HardcodedParams[mode][task]$
+            
+            \State \Comment{1. Instansiasi Model Dasar}
+            \State $rf \gets \textbf{new } RandomForest(params[\text{'rf'}])$
+            \State $xgb \gets \textbf{new } XGBoost(params[\text{'xgb'}])$
+
+            \State \Comment{2. Buat Ensemble Voting (Soft/Probabilitas)}
+            \State $voting \gets \textbf{new } VotingClassifier(\{rf, xgb\}, \text{'soft'})$
+
+            \State \Comment{3. Bungkus dalam Pipeline dengan Scaler}
+            \State \Return $\textbf{new } Pipeline(\text{StandardScaler}, voting)$
+        \EndProcedure
+
+        \Statex
+
+        \Procedure{RunTask}{$df, task$}
+            \State \Comment{Persiapan Data \& Encoding}
+            \State $X \gets \Call{CleanValues}{df[HFV\_Features]}$
+            \State $y \gets \Call{LabelEncode}{df[task]}$
+
+            \State \Comment{Split Data 80:20 (Stratified)}
+            \State $X_{tr}, X_{te}, y_{tr}, y_{te} \gets \Call{TrainTestSplit}{X, y, 0.2}$
+
+            \State \Comment{Dapatkan Pipeline \& Latih}
+            \State $model \gets \Call{GetVotingPipeline}{task, ExperimentMode}$
+            \State $model.\text{fit}(X_{tr}, y_{tr})$
+
+            \State \Comment{Evaluasi Hasil}
+            \State $preds \gets model.\text{predict}(X_{te})$
+            \State $metrics \gets \Call{CalculateMetrics}{y_{te}, preds}$
+            \State \Call{PrintReport}{metrics}
+        \EndProcedure
+
+        \Statex
+
+        \Procedure{MainClassification}{}
+            \State $df \gets \Call{LoadData}{FinalPESVFile}$
+            \State $Tasks \gets [\text{'binary\_type'}, \text{'category'}, \text{'application'}]$
+
+            \For{\textbf{each} $task$ \textbf{in} $Tasks$}
+                \If{$task \in df.\text{columns}$}
+                    \State \Call{RunTask}{df, task}
+                \EndIf
+            \EndFor
+        \EndProcedure
+
+    \end{algorithmic}
+        \caption{Alur kerja klasifikasi menggunakan ensemble Soft Voting.} 
+    \label{lst:alg_classifierg}
+\end{listing}
+
+Implementasi teknis dari pembuatan \textit{ensemble} ini menggunakan pustaka \texttt{scikit-learn} ditunjukkan pada Potongan Kode \ref{lst:snippet_voting}.
+
+\begin{listing}[H]
+\setstretch{1}
+    \begin{minted}[
+        fontsize=\footnotesize
+    ]{python}
+# Potongan kode dari hfv_final_classifier_soft_voting_best_params.py
+# (Fungsi get_voting_pipeline)
+
+    # 1. Instantiate Individual Models
+    rf_clf = RandomForestClassifier(random_state=RANDOM_STATE, n_jobs=-1, **params['rf'])
+    xgb_clf = XGBClassifier(random_state=RANDOM_STATE, n_jobs=-1, **params['xgb'])
+
+    # 2. Create Voting Ensemble (Soft Voting)
+    # Soft voting averages the probabilities, which is usually superior for diverse models
+    voting_clf = VotingClassifier(
+        estimators=[('rf', rf_clf), ('xgb', xgb_clf)],
+        voting='soft',
+        n_jobs=-1
+    )
+
+    # 3. Wrap in Pipeline
+    pipeline = Pipeline([
+        ('scaler', StandardScaler()),
+        ('voting', voting_clf)
+    ])
+    
+    return pipeline
+    \end{minted}
+    \captionsetup{font=small}
+    \caption{Implementasi \textit{VotingClassifier} dengan strategi \textit{soft voting}.}
+    \label{lst:snippet_voting}
+\end{listing}
+
+Dengan arsitektur ini, sistem HFV dapat secara otomatis beradaptasi dan memberikan prediksi terbaik untuk berbagai tingkat granularitas klasifikasi (biner, kategori, atau aplikasi) dengan memanfaatkan kekuatan gabungan dari dua algoritma \textit{state-of-the-art}.

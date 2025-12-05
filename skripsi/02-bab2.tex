@@ -42,12 +42,38 @@ Fitur-fitur utama yang diamati dalam ETA dapat dikategorikan sebagai berikut:
 
 Dengan memanfaatkan kombinasi fitur-fitur ini, ETA memungkinkan klasifikasi lalu lintas yang \textit{robust} tanpa melanggar privasi yang diberikan oleh enkripsi.
 
-\section{Klasifikasi Berbasis \textit{Flow}}
+%-----------------------------------------------------------------------------%
+\section{Klasifikasi Berbasis Flow}
 \label{sec:bab2-flow-based}
+%-----------------------------------------------------------------------------%
+
 Seiring dengan tidak efektifnya analisis berbasis paket individual (seperti DPI) pada lalu lintas terenkripsi, fokus metodologi bergeser pada unit analisis yang lebih besar yang dikenal sebagai \textit{flow}.
 
 \subsection{Definisi \textit{Flow}}
-Secara konseptual, sebuah \textit{flow} (flow) adalah sekumpulan paket yang memiliki atribut kunci yang sama pada header paket \citep{park2024fast}. Definisi paling umum dari sebuah \textit{flow} unidirectional (satu arah) didasarkan pada 5-tuple, yang terdiri dari: Alamat IP Sumber (Source IP), Port Sumber (Source Port), Alamat IP Tujuan (Destination IP), Port Tujuan (Destination Port), dan Protokol Transportasi (misalnya, TCP atau UDP) \citep{park2024fast}.
+Secara konseptual, sebuah \textit{flow} atau aliran adalah sekumpulan paket yang melewati titik observasi dalam jaringan selama interval waktu tertentu dan memiliki atribut kunci yang sama pada header paket \citep{park2024fast}. 
+
+Secara matematis, sebuah \textit{flow} ($f$) dapat didefinisikan sebagai himpunan terurut dari $n$ paket ($p$), seperti dinyatakan dalam Persamaan \ref{eq:flow_def}.
+
+\begin{myequation}{Definisi Himpunan Flow}
+    \label{eq:flow_def}
+    f = \{p_1, p_2, \dots, p_n\}
+\end{myequation}
+
+Pengelompokan paket ke dalam himpunan $f$ didasarkan pada kesamaan atribut header utama. Definisi paling umum dari sebuah \textit{flow} didasarkan pada kunci identitas 5-tuple ($K$), yang terdiri dari Alamat IP Sumber, Port Sumber, Alamat IP Tujuan, Port Tujuan, dan Protokol Transportasi \citep{park2024fast}. Definisi formal kunci 5-tuple ini ditunjukkan pada Persamaan \ref{eq:5tuple}.
+
+\begin{myequation}{Definisi Kunci 5-Tuple}
+    \label{eq:5tuple}
+    K(f) = (\text{IP}_{src}, \text{Port}_{src}, \text{IP}_{dst}, \text{Port}_{dst}, \text{Protocol})
+\end{myequation}
+
+Maka, sebuah paket $p_i$ dianggap anggota dari flow $f$ jika dan hanya jika header paket tersebut ($H(p_i)$) sesuai dengan kunci flow tersebut:
+
+\begin{myequation}{Kondisi Keanggotaan Flow}
+    \label{eq:flow_membership}
+    p_i \in f \iff H(p_i) \equiv K(f)
+\end{myequation}
+
+Visualisasi mengenai konsep \textit{flow} berdasarkan 5-tuple ini dapat dilihat pada Gambar \ref{fig:def-flow}.
 
 \begin{figure}[h!]
     \centering
@@ -72,36 +98,54 @@ Secara konseptual, sebuah \textit{flow} (flow) adalah sekumpulan paket yang memi
     
     % Bidirectional flow arrows
     \draw[<->, thick] ($(client.south)+(0,-2.5)$) -- node[below, align=center, text width=6cm]{Aggregated Packets in Both Directions (5-tuple shared, roles reversible)} ($(server.south)+(0,-2.5)$);
-    
     \end{tikzpicture}
     \caption{Definisi \textit{flow}.}
     \label{fig:def-flow}
 \end{figure}
 
-Namun, untuk analisis perilaku yang lebih komprehensif, konsep \textit{flow} dua-arah (bidirectional flow) atau sesi (session) sering digunakan \citep{huoh2022flow}. \textit{Flow} dua-arah merepresentasikan "percakapan" jaringan yang lengkap antara dua titik akhir. \textit{Flow} ini didefinisikan menggunakan 5-tuple yang sama, namun mengagregasi paket dari kedua arah (misalnya, dari Klien ke Server dan dari Server ke Klien), di mana alamat dan port sumber serta tujuan dapat dibalik \citep{huoh2022flow}.
+Namun, untuk analisis perilaku yang lebih komprehensif, konsep \textit{flow} dua-arah (\textit{bidirectional flow}) atau sesi (\textit{session}) sering digunakan \citep{huoh2022flow}. \textit{Flow} dua-arah merepresentasikan "percakapan" jaringan yang lengkap antara dua titik akhir. Berbeda dengan \textit{flow} satu arah, \textit{flow} dua arah mengagregasi paket dari kedua arah (klien ke server dan server ke klien), di mana peran alamat IP dan port sumber/tujuan dapat dipertukarkan \citep{huoh2022flow}.
+
+\subsection{Keunggulan Pendekatan Berbasis \textit{Flow}}
+Keunggulan teoretis fundamental dari analisis berbasis \textit{flow} adalah pergeseran dari inspeksi paket individual ke analisis perilaku agregat dari sebuah "percakapan" jaringan \citep{huoh2022flow, Razooqi2025-bo}.
+
+Menganalisis paket secara terisolasi seringkali tidak memberikan informasi kontekstual yang cukup untuk melakukan identifikasi, terutama ketika \textit{payload} dienkripsi \citep{lin2022bert}. Sebaliknya, sebuah \textit{flow}, sebagai agregat dari banyak paket ($f$), menyimpan pola-pola statistik dan temporal yang kaya. 
+
+\textit{Flow} data memungkinkan penangkapan informasi laten dalam dimensi temporal dan relasi antar paket \citep{huoh2022flow}. Pola-pola ini—seperti durasi total percakapan, volume total data yang dipertukarkan, distribusi ukuran paket, dan ritme waktu antar-kedatangan paket (IAT)—secara kolektif menciptakan "sidik jari" perilaku (\textit{behavioral fingerprint}) yang dapat digunakan oleh model \textit{machine learning} untuk membedakan berbagai aplikasi atau layanan, bahkan ketika data dienkripsi \citep{Razooqi2025-bo}.
 
 \subsection{Keunggulan Pendekatan Berbasis \textit{Flow}}
 Keunggulan teoretis fundamental dari analisis berbasis \textit{flow} adalah pergeseran dari inspeksi paket individual ke analisis perilaku agregat dari sebuah "percakapan" jaringan \citep{huoh2022flow, Razooqi2025-bo}. Menganalisis paket secara terisolasi seringkali tidak memberikan informasi kontekstual yang cukup untuk melakukan identifikasi, terutama ketika payload dienkripsi \citep{lin2022bert}.
 
 Sebaliknya, sebuah \textit{flow}, sebagai agregat dari banyak paket, menyimpan pola-pola statistik dan temporal yang kaya. \textit{flow} data memungkinkan penangkapan informasi laten dalam dimensi temporal dan relasi antar paket \citep{huoh2022flow}. Pola-pola ini—seperti durasi total percakapan, volume total data yang dipertukarkan, distribusi ukuran paket, dan ritme waktu antar-kedatangan paket (IAT)—secara kolektif menciptakan "sidik jari" perilaku (behavioral fingerprint) yang dapat digunakan oleh model machine learning untuk membedakan berbagai aplikasi atau layanan, bahkan ketika data dienkripsi \citep{Razooqi2025-bo}.
 
+%-----------------------------------------------------------------------------%
 \section{Rekayasa Fitur Statistik (Statistical Feature Engineering)}
-Rekayasa fitur statistik adalah proses sistematis mengekstraksi atribut numerik dari data \textit{flow} jaringan yang mewakili perilaku trafik dalam bentuk terkuantisasi. Fitur statistik ini memudahkan deteksi dan klasifikasi trafik terenkripsi, khususnya pada jaringan modern di mana payload terenkripsi sepenuhnya dan inspeksi isi tidak dimungkinkan. Pendekatan ini didasarkan pada teori probabilitas dan statistik, karena distribusi statistik serta dinamika temporal traffic mampu membedakan aplikasi atau layanan jaringan tanpa harus mengakses data isian (payload) \citep{Razooqi2025-bo, DraperGil2016, Lotfollahi2019}.
+\label{sec:bab2-stat-feature}
+%-----------------------------------------------------------------------------%
 
+Rekayasa fitur statistik adalah proses sistematis mengekstraksi atribut numerik dari data \textit{flow} jaringan yang mewakili perilaku trafik dalam bentuk terkuantisasi. Fitur statistik ini memudahkan deteksi dan klasifikasi trafik terenkripsi, khususnya pada jaringan modern di mana \textit{payload} terenkripsi sepenuhnya dan inspeksi isi tidak dimungkinkan.
 
+Pendekatan ini didasarkan pada teori probabilitas dan statistik, karena distribusi statistik serta dinamika temporal traffic mampu membedakan aplikasi atau layanan jaringan tanpa harus mengakses data isian (\textit{payload}) \citep{Razooqi2025-bo, DraperGil2016, Lotfollahi2019}.
 
 \subsection{Fitur Statistik Level \textit{Flow}}
-Fitur pada level \textit{flow} menggambarkan karakteristik agregat dari satu sesi komunikasi (flow) dalam jaringan. Meskipun payload yang terenkripsi tidak dapat diinspeksi, perilaku flow masih dapat dijelaskan melalui fitur statistik berikut:
+Fitur pada level \textit{flow} menggambarkan karakteristik agregat dari satu sesi komunikasi (\textit{flow}) dalam jaringan. Meskipun \textit{payload} yang terenkripsi tidak dapat diinspeksi, perilaku \textit{flow} masih dapat dijelaskan melalui fitur statistik utama seperti durasi total, volume total data, dan jumlah total paket \citep{AlFayoumi2022, Liu2024, DraperGil2016}.
 
-\begin{itemize}
-    \item Durasi total (Total Duration): Lama waktu antara paket pertama dan terakhir pada flow, digunakan untuk mengidentifikasi pola sesi pada aplikasi tertentu \citep{AlFayoumi2022, Liu2024}.
-    \item Volume total data (Total Bytes): Jumlah keseluruhan byte yang dikirimkan dalam satu flow, merepresentasikan intensitas transfer data \citep{DraperGil2016}.
-    \item Jumlah total paket (Total Packets): Total paket yang dikirim pada satu flow, memperlihatkan karakter penggunaan komunikasi aplikasi berbeda \citep{Razooqi2025}.
-    \item Distribusi ukuran paket (Packet Size Distribution): Statistik seperti rata-rata, deviasi standar, minimum, dan maksimum dari ukuran paket dalam flow, memberikan insight pola aplikasi misal transfer file (paket besar konsisten) atau VoIP (paket kecil fluktuatif) \citep{shapira2021flowpic}.
-    \item Fitur statistik waktu antar-paket (Inter-Arrival Time/IAT): Statistik rata-rata, deviasi standar, minimum, dan maksimum waktu antar-kedatangan paket dalam suatu flow, efektif membedakan aplikasi real-time dengan aplikasi non-real-time \citep{8845643, DraperGil2016}.
-\end{itemize}
+Selain total agregat, distribusi statistik dari ukuran paket (\textit{Packet Size}) dan Waktu Antar-Kedatangan (\textit{Inter-Arrival Time}/IAT) memberikan wawasan mendalam mengenai pola aplikasi \citep{shapira2021flowpic, 8845643}. Untuk mengkuantisasi distribusi ini, statistik deskriptif seperti Rata-rata (\textit{Mean}) dan Standar Deviasi (\textit{Standard Deviation}) digunakan.
 
-Fitur flow-level sangat populer karena tetap stabil terhadap perubahan enkripsi dan protokol, terbukti handal dalam berbagai pendekatan deteksi dan klasifikasi aplikasi pada infrastruktur jaringan modern \citep{Razooqi2025-bo, Liu2024}.
+Secara formal, jika $X = \{x_1, x_2, \dots, x_N\}$ adalah himpunan nilai observasi (misalnya ukuran paket atau nilai IAT) dalam sebuah \textit{flow} dengan $N$ sampel, maka Rata-rata ($\mu$) didefinisikan pada Persamaan \ref{eq:mean_stat}.
+
+\begin{myequation}{Rumus Rata-rata (Mean)}
+    \label{eq:mean_stat}
+    \mu = \frac{1}{N} \sum_{i=1}^{N} x_i
+\end{myequation}
+
+Selanjutnya, untuk mengukur variasi atau fluktuasi data (\textit{jitter}), digunakan Standar Deviasi ($\sigma$) seperti ditunjukkan pada Persamaan \ref{eq:std_stat}.
+
+\begin{myequation}{Rumus Standar Deviasi}
+    \label{eq:std_stat}
+    \sigma = \sqrt{\frac{1}{N} \sum_{i=1}^{N} (x_i - \mu)^2}
+\end{myequation}
+
+Fitur \textit{flow-level} ini sangat populer karena tetap stabil terhadap perubahan enkripsi dan protokol, serta terbukti handal dalam berbagai pendekatan deteksi pada infrastruktur jaringan modern \citep{Razooqi2025-bo, Liu2024}. Ilustrasi perbedaan fitur \textit{flow-level} dan \textit{burst-level} dapat dilihat pada Gambar \ref{fig:flow-burst}.
 
 \begin{figure}[h!]
     \centering
@@ -109,11 +153,10 @@ Fitur flow-level sangat populer karena tetap stabil terhadap perubahan enkripsi 
     >=Stealth,
     every node/.style={font=\small},
     packet/.style={draw, rectangle, minimum width=0.25cm, minimum height=0.35cm, fill=black!15},
-    burstbrace/.style={decorate,decoration={brace,amplitude=5pt,mirror},thick} % Added 'mirror' to ensure consistency if needed, though manual coord order matters more
+    burstbrace/.style={decorate,decoration={brace,amplitude=5pt,mirror},thick} 
 ]
 % --- FLOW-LEVEL FEATURE SECTION ---
 \node[align=center, font=\bfseries] at (0,2) {Flow-Level Statistical Features};
-
 % Timeline
 \draw[thick] (-2,0) -- (2,0);
 
@@ -127,13 +170,11 @@ Fitur flow-level sangat populer karena tetap stabil terhadap perubahan enkripsi 
 
 % Example labels
 \node[align=center, text width=4cm] at (0,-1.2) {Total Packets, Total Bytes,\\Mean/Std Packet Size,\\Mean/Std IAT};
-
 % Separator Line
 \draw[dashed] (3,-2.8) -- (3,2.5);
 
 % --- BURST-LEVEL FEATURE SECTION ---
 \node[align=center, font=\bfseries] at (7,2) {Burst-Level Statistical Features};
-
 % Timeline for bursts (Extended length)
 \draw[thick] (4.5,0) -- (9.5,0);
 
@@ -147,48 +188,69 @@ Fitur flow-level sangat populer karena tetap stabil terhadap perubahan enkripsi 
     \node[packet] at (\x,0) {};
 }
 
-% Braces for bursts (y positions adjusted slightly)
-% Note: I ensured the coordinates go Left-to-Right for the braces to point downwards correctly
+% Braces for bursts 
 \draw[decorate,decoration={brace,amplitude=5pt,mirror},thick] (4.5,-0.5) -- node[below=8pt]{Burst 1} (5.9,-0.5);
-
-% Idle Time Brace (Now covers the wider gap from 5.9 to 7.5)
+% Idle Time Brace 
 \draw[decorate,decoration={brace,amplitude=5pt,mirror},thick] (6.0,-0.5) -- node[below=8pt]{Idle Time} (7.4,-0.5);
-
 % Burst 2 Brace
 \draw[decorate,decoration={brace,amplitude=5pt,mirror},thick] (7.5,-0.5) -- node[below=8pt]{Burst 2} (8.6,-0.5);
 
-% Text labels - MOVED DOWN to y=-2.8 to prevent overlap
+% Text labels 
 \node[align=center, text width=5.5cm] at (7,-2.8) {Bursts, Packet/Byte per Burst,\\Burst Duration, Idle Time Stats};
-
 \end{tikzpicture}
     \caption{Ilustrasi \textit{flow-level} dan \textit{burst-level} dalam \textit{network traffic}.}
     \label{fig:flow-burst}
 \end{figure}
 
 \subsection{Fitur Statistik Level Burst (Burst-Level Statistical Features)}
-Konsep burst-level features didasarkan pada penemuan fenomena burst-packet, yaitu periode pengiriman paket intensif diikuti waktu jeda yang cukup lama (idle) pada suatu \textit{flow} trafik. Burst dan idle time menjadi representasi dinamika makro interaksi aplikasi dengan server atau sesama klien \citep{Lotfollahi2019}.
+Konsep \textit{burst-level features} didasarkan pada penemuan fenomena \textit{burst-packet}, yaitu periode pengiriman paket intensif diikuti waktu jeda yang cukup lama (\textit{idle}) pada suatu \textit{flow} trafik. \textit{Burst} dan \textit{idle time} menjadi representasi dinamika makro interaksi aplikasi dengan server atau sesama klien \citep{Lotfollahi2019}.
 
+Secara matematis, sebuah \textit{burst} didefinisikan sebagai rangkaian paket yang berurutan dimana selisih waktu kedatangan ($t$) antar paketnya berada di bawah ambang batas tertentu ($\tau_{idle}$), seperti dinyatakan dalam Persamaan \ref{eq:burst_cond}.
+
+\begin{myequation}{Kondisi Identifikasi Burst}
+    \label{eq:burst_cond}
+    t_{k+1} - t_k < \tau_{idle}
+\end{myequation}
+
+Fitur-fitur statistik kemudian dihitung berdasarkan grup paket yang memenuhi kondisi tersebut, meliputi:
 \begin{itemize}
-    \item Jumlah total burst: Banyaknya burst atau periode aktif dalam satu \textit{flow}, terkait erat dengan model komunikasi aplikasi (misal aplikasi chat menghasilkan banyak burst singkat) \citep{Jorgensen2024, kotak2025vpn}.
-    \item Statistik paket per-burst: Meliputi jumlah paket, volume data, dan durasi per-burst yang terjadi dalam satu sesi komunikasi. Karakteristik ini dapat digunakan untuk membedakan aplikasi berbasis komunikasi periodik atau kontinu \citep{Fesl2024}.
-    \item Waktu jeda antar-burst (Inter-burst Idle Time): Mean, minimum, maksimum waktu antar burst, sebagai indikator kelembaman protokol aplikasi tertentu \citep{Razooqi2025-bo, DraperGil2016}.
+    \item \textbf{Jumlah total burst:} Banyaknya burst atau periode aktif dalam satu \textit{flow}, terkait erat dengan model komunikasi aplikasi (misal aplikasi chat menghasilkan banyak burst singkat) \citep{Jorgensen2024, kotak2025vpn}.
+    \item \textbf{Statistik paket per-burst:} Meliputi jumlah paket, volume data, dan durasi per-burst yang terjadi dalam satu sesi komunikasi. Karakteristik ini dapat digunakan untuk membedakan aplikasi berbasis komunikasi periodik atau kontinu \citep{Fesl2024}.
+    \item \textbf{Waktu jeda antar-burst (Inter-burst Idle Time):} Statistik (Mean, Min, Max) dari waktu antar burst, sebagai indikator kelembaman protokol aplikasi tertentu \citep{Razooqi2025-bo, DraperGil2016}.
 \end{itemize}
 
-Analisis burst-level features memperkaya flow-level features, khususnya dalam mendeteksi aplikasi atau layanan dengan pola trafik makro atau interaktif seperti video streaming, cloud storage, dan real-time communication \citep{kotak2025vpn, Liu2024}.
+Analisis \textit{burst-level features} memperkaya \textit{flow-level features}, khususnya dalam mendeteksi aplikasi atau layanan dengan pola trafik makro atau interaktif seperti video streaming, cloud storage, dan real-time communication \citep{kotak2025vpn, Liu2024}. Studi terkini menegaskan \textit{flow-level} dan \textit{burst-level statistical features} tetap menjadi tulang punggung sistem deteksi serta identifikasi aplikasi, baik berbasis \textit{machine learning} klasik maupun \textit{deep learning end-to-end}, terutama untuk trafik yang terenkripsi secara penuh \citep{Razooqi2025-bo, DraperGil2016, Lotfollahi2019}.
 
-Studi terkini menegaskan flow-level dan burst-level statistical features tetap menjadi tulang punggung sistem deteksi serta identifikasi aplikasi, baik berbasis machine learning klasik maupun deep learning end-to-end, terutama untuk trafik yang terenkripsi secara penuh \citep{Razooqi2025-bo, DraperGil2016, Lotfollahi2019}.
-
+%-----------------------------------------------------------------------------%
 \section{Pembelajaran Representasi Payload (Payload Representation Learning)}
+\label{sec:bab2-payload-learning}
+%-----------------------------------------------------------------------------%
 
-Pembelajaran representasi payload merujuk pada penggunaan teknik deep learning untuk menganalisis payload mentah (raw payload) dari paket jaringan demi mengekstraksi pola yang kaya dan informatif \citep{Razooqi2025, Lotfollahi2019}. Pendekatan ini memungkinkan model untuk secara otomatis menemukan karakteristik tersembunyi dalam urutan byte payload, yang sering kali mencerminkan fingerprint unik aplikasi atau layanan yang digunakan, meskipun payload tersebut terenkripsi \citep{nie2025iot, Stein2024}.
+Pembelajaran representasi payload merujuk pada penggunaan teknik \textit{deep learning} untuk menganalisis \textit{payload} mentah (\textit{raw payload}) dari paket jaringan demi mengekstraksi pola yang kaya dan informatif \citep{Razooqi2025, Lotfollahi2019}. 
+
+Pendekatan ini memungkinkan model untuk secara otomatis menemukan karakteristik tersembunyi dalam urutan \textit{byte payload}, yang sering kali mencerminkan \textit{fingerprint} unik aplikasi atau layanan yang digunakan, meskipun \textit{payload} tersebut terenkripsi \citep{nie2025iot, Stein2024}.
 
 \subsection{Keterbatasan Analisis Ukuran Paket vs. Keunggulan Analisis Raw Payload}
-Analisis tradisional yang hanya memanfaatkan ukuran paket dan urutannya memiliki keterbatasan signifikan dalam hal kepekaan dan kedalaman informasi yang dapat diambil \citep{DraperGil2016}. Ukuran paket hanyalah satu aspek statistik dan tidak menangkap pola byte internal yang terkandung dalam payload yang memungkinkan identifikasi lebih halus dan spesifik terhadap aplikasi.
+Analisis tradisional yang hanya memanfaatkan ukuran paket dan urutannya memiliki keterbatasan signifikan dalam hal kepekaan dan kedalaman informasi yang dapat diambil \citep{DraperGil2016}. Ukuran paket hanyalah satu aspek statistik dan tidak menangkap pola \textit{byte} internal yang terkandung dalam \textit{payload} yang memungkinkan identifikasi lebih halus dan spesifik terhadap aplikasi.
 
-Sebaliknya, analisis raw payload, bahkan jika terenkripsi, dapat berisi fingerprint yang lebih kaya dan kompleks. Deep learning mampu mengolah urutan level-byte dari payload secara langsung sehingga dapat mengenali pola lokal dan global yang tersembunyi, memungkinkan klasifikasi yang lebih akurat sekaligus adaptasi terhadap variasi protokol dan enkripsi \citep{Pert2020, Lotfollahi2019}.
+Sebaliknya, analisis \textit{raw payload}, bahkan jika terenkripsi, dapat berisi \textit{fingerprint} yang lebih kaya dan kompleks. \textit{Deep learning} mampu mengolah urutan \textit{level-byte} dari \textit{payload} secara langsung sehingga dapat mengenali pola lokal dan global yang tersembunyi, memungkinkan klasifikasi yang lebih akurat sekaligus adaptasi terhadap variasi protokol dan enkripsi \citep{Pert2020, Lotfollahi2019}.
 
 \subsection{1D-Convolutional Neural Network (1D-CNN) sebagai Ekstraktor Fitur}
-Arsitektur 1D-Convolutional Neural Network (1D-CNN) sangat sesuai untuk mengekstraksi fitur dari data sekuensial seperti \textit{flow} byte payload \citep{Zeng2021}. Lapisan konvolusi 1D menerapkan filter yang bergerak sepanjang dimensi sekuensial untuk mendeteksi pola lokal, sedangkan lapisan max pooling mengurangi dimensi data sambil menyoroti fitur dominan \citep{Szegedy2020}.
+Arsitektur \textit{1D-Convolutional Neural Network} (1D-CNN) sangat sesuai untuk mengekstraksi fitur dari data sekuensial seperti \textit{flow byte payload} \citep{Zeng2021}. Lapisan konvolusi 1D menerapkan filter yang bergerak sepanjang dimensi sekuensial untuk mendeteksi pola lokal, sedangkan lapisan \textit{max pooling} mengurangi dimensi data sambil menyoroti fitur dominan \citep{Szegedy2020}.
+
+Secara matematis, jika $x$ adalah vektor input yang merepresentasikan urutan \textit{byte payload} dan $w$ adalah filter (kernel) dengan ukuran $K$, maka operasi konvolusi 1D untuk menghasilkan elemen ke-$j$ pada peta fitur ($y$) didefinisikan pada Persamaan \ref{eq:conv1d}.
+
+\begin{myequation}{Operasi Konvolusi 1D}
+    \label{eq:conv1d}
+    y_j = \sigma \left( \sum_{i=0}^{K-1} w_i \cdot x_{j+i} + b \right)
+\end{myequation}
+
+Dimana $b$ adalah bias dan $\sigma(\cdot)$ adalah fungsi aktivasi non-linear. Dalam arsitektur modern, fungsi aktivasi yang umum digunakan adalah \textit{Rectified Linear Unit} (ReLU) untuk mengatasi masalah \textit{vanishing gradient} dan mempercepat konvergensi. Definisi ReLU ditunjukkan pada Persamaan \ref{eq:relu}.
+
+\begin{myequation}{Fungsi Aktivasi ReLU}
+    \label{eq:relu}
+    \sigma(z) = \max(0, z)
+\end{myequation}
 
 \begin{figure}[h!]
     \centering
@@ -199,19 +261,15 @@ Arsitektur 1D-Convolutional Neural Network (1D-CNN) sangat sesuai untuk mengekst
 ]
 % Input sequence
 \node[block] (input) {Input Payload (Byte Sequence)};
-
 % Convolution layer
 \node[block, below=1.5cm of input] (conv) {1D Convolution Layer\\(Sliding Filters)};
-
 % Pooling layer
 \node[block, below=1.5cm of conv] (pool) {Max Pooling\\(Dimensionality Reduction)};
 
 % Flatten
 \node[block, below=1.5cm of pool] (flat) {Flatten};
-
 % Dense / Bottleneck layer
 \node[block, below=1.5cm of flat] (dense) {Dense / Bottleneck Layer};
-
 % Output Feature Vector
 \node[block, below=1.5cm of dense] (feat) {Latent Feature Vector\\(Representasi Semantik)};
 
@@ -221,15 +279,16 @@ Arsitektur 1D-Convolutional Neural Network (1D-CNN) sangat sesuai untuk mengekst
 \draw[->, thick] (pool) -- (flat);
 \draw[->, thick] (flat) -- (dense);
 \draw[->, thick] (dense) -- (feat);
-
 \end{tikzpicture}
     \caption{1D-CNN sebagai ekstraktor fitur.}
     \label{fig:bab2_1-cnn}
 \end{figure}
 
-Dalam konteks payload analysis, 1D-CNN dapat dilatih sebagai classifier untuk membedakan pola byte spesifik aplikasi atau protokol. Setelah pelatihan, fitur internal dari lapisan tersembunyi seperti lapisan dense atau bottleneck dapat diekstraksi sebagai representasi laten (vektor fitur) yang kaya akan informasi yang dapat digunakan untuk tugas downstream seperti deteksi malware atau klasifikasi trafik \citep{nie2025iot, AlFayoumi2022}.
+Visualisasi arsitektur 1D-CNN yang digunakan sebagai ekstraktor fitur dapat dilihat pada Gambar \ref{fig:bab2_1-cnn}.
 
-Selain itu, transfer learning memperkuat kemampuan 1D-CNN dengan memanfaatkan bobot model yang sudah dilatih pada dataset besar untuk mempercepat pembelajaran dan meningkatkan generalisasi pada dataset baru yang terbatas \citep{Stein2024, nie2025iot}.
+Dalam konteks \textit{payload analysis}, 1D-CNN dapat dilatih sebagai \textit{classifier} untuk membedakan pola \textit{byte} spesifik aplikasi atau protokol. Setelah pelatihan, fitur internal dari lapisan tersembunyi seperti lapisan \textit{dense} atau \textit{bottleneck} dapat diekstraksi sebagai representasi laten (vektor fitur) yang kaya akan informasi yang dapat digunakan untuk tugas \textit{downstream} seperti deteksi \textit{malware} atau klasifikasi trafik \citep{nie2025iot, AlFayoumi2022}.
+
+Selain itu, \textit{transfer learning} memperkuat kemampuan 1D-CNN dengan memanfaatkan bobot model yang sudah dilatih pada dataset besar untuk mempercepat pembelajaran dan meningkatkan generalisasi pada dataset baru yang terbatas \citep{Stein2024, nie2025iot}.
 
 \section{Pendekatan Klasifikasi Hibrida}
 
@@ -240,12 +299,97 @@ Fitur statistik, seperti flow-level dan burst-level, efektif menggambarkan karak
 
 Studi terkini dalam data fusion dan multimodal learning menunjukkan bahwa penggabungan fitur statistik dan fitur deep learning, baik melalui early fusion (penggabungan fitur sebelum klasifikasi) maupun late fusion (penggabungan hasil prediksi beberapa model), menghasilkan classifier yang lebih adaptif terhadap variasi trafik dan perubahan karakteristik aplikasi baru \citep{nie2025iot, Lotfollahi2019, kotak2025vpn}. Pendekatan ini juga mengurangi risiko overfitting serta meningkatkan kemampuan generalisasi model dalam lingkungan nyata yang heterogen \citep{biscione2021convolutional}.
 
+%-----------------------------------------------------------------------------%
 \section{Model Klasifikasi Ensemble (Ensemble Classifiers)}
+\label{sec:bab2-ensemble}
+%-----------------------------------------------------------------------------%
 
-Model klasifikasi ensemble adalah metode yang menggabungkan beberapa model dasar untuk meningkatkan performa prediksi dibandingkan menggunakan model tunggal. Dalam konteks data tabular berdimensi tinggi dan fitur hibrida (campuran tipe fitur numerik, kategorikal, dan lainnya), ensemble berbasis pohon seperti Random Forest dan Gradient Boosting (termasuk XGBoost) sangat populer dan efektif \citep{chen2016xgboost, breiman2001random}.
+Model klasifikasi ensemble adalah metode yang menggabungkan beberapa model dasar (\textit{base learners}) untuk meningkatkan performa prediksi dibandingkan menggunakan model tunggal. Dalam konteks data tabular berdimensi tinggi dan fitur hibrida (campuran tipe fitur numerik dan kategorikal), ensemble berbasis pohon seperti Random Forest dan Gradient Boosting (termasuk XGBoost) terbukti sangat efektif \citep{chen2016xgboost, breiman2001random}.
 
-Random Forest menggunakan teknik bagging (bootstrap aggregating) dengan membangun banyak pohon keputusan independen pada subset data dan fitur acak, sehingga mengurangi overfitting dan meningkatkan stabilitas hasil klasifikasi melalui voting mayoritas \citep{breiman2001random}. Metode ini handal dalam menangani data berdimensi tinggi serta mampu memproses fitur yang heterogen, memberikan estimasi penting fitur yang berguna untuk interpretabilitas \citep{liaw2002classification}.
+\subsection{Random Forest}
+Random Forest menggunakan teknik \textit{bagging} (\textit{bootstrap aggregating}) dengan membangun banyak pohon keputusan independen pada subset data dan fitur acak. Metode ini mengurangi variansi dan risiko \textit{overfitting} melalui mekanisme \textit{voting} \citep{breiman2001random}.
 
-Sementara Gradient Boosting dan implementasinya yang populer, XGBoost, membangun model secara iteratif dengan menambahkan pohon demi pohon yang memperbaiki kesalahan model sebelumnya menggunakan pendekatan gradient descent pada fungsi loss. Keunggulan teoretisnya adalah kemampuannya untuk mengoptimasi fungsi loss secara eksplisit serta pengaturan regularisasi yang mencegah overfitting, sehingga memberikan akurasi prediksi yang sangat baik pada berbagai masalah klasifikasi dan regresi \citep{chen2016xgboost, friedman2001greedy}.
+Secara matematis, jika sebuah Random Forest terdiri dari $T$ pohon keputusan, di mana $h_t(\mathbf{x})$ adalah prediksi kelas dari pohon ke-$t$ untuk input $\mathbf{x}$, maka prediksi akhir $\hat{y}$ ditentukan oleh mayoritas suara (\textit{majority voting}) seperti dinyatakan dalam Persamaan \ref{eq:rf_voting}.
 
-Kedua metode ini sangat sesuai untuk data yang bersifat hibrida dan berdimensi tinggi karena dapat menyesuaikan pembagian fitur pada pohon secara adaptif dan dapat mengatasi masalah data yang tidak seimbang maupun missing value dengan baik \citep{probst2019tunability}. Oleh karena itu, model ensemble berbasis pohon menjadi pilihan unggulan untuk tugas-tugas klasifikasi pada domain seperti analisis trafik jaringan, bioinformatika, dan aplikasi prediktif lainnya \citep{shao2024comparison}.
+\begin{myequation}{Voting Mayoritas Random Forest}
+    \label{eq:rf_voting}
+    \hat{y} = \text{mode} \{ h_1(\mathbf{x}), h_2(\mathbf{x}), \dots, h_T(\mathbf{x}) \}
+\end{myequation}
+
+Metode ini handal dalam menangani data berdimensi tinggi serta mampu memproses fitur yang heterogen, memberikan estimasi penting fitur (\textit{feature importance}) yang berguna untuk interpretabilitas \citep{liaw2002classification}.
+
+\subsection{XGBoost (Extreme Gradient Boosting)}
+XGBoost adalah implementasi dari algoritma \textit{Gradient Boosting} yang dirancang untuk kecepatan dan performa. Berbeda dengan Random Forest yang membangun pohon secara independen, XGBoost membangun model secara sekuensial (iteratif) dengan meminimalkan fungsi objektif yang terdiri dari fungsi \textit{loss} dan istilah regularisasi \citep{chen2016xgboost}.
+
+Keunggulan teoretis XGBoost terletak pada fungsi objektifnya ($\mathcal{L}$) yang secara eksplisit mengontrol kompleksitas model untuk mencegah \textit{overfitting}. Persamaan \ref{eq:xgboost_obj} menunjukkan fungsi objektif tersebut.
+
+\begin{myequation}{Fungsi Objektif XGBoost}
+    \label{eq:xgboost_obj}
+    \mathcal{L}(\phi) = \sum_{i} l(\hat{y}_i, y_i) + \sum_{k} \Omega(f_k)
+\end{myequation}
+
+Dimana $l$ adalah fungsi \textit{loss} yang dapat diturunkan (misalnya \textit{Log-Loss}) yang mengukur selisih antara prediksi $\hat{y}_i$ dan target $y_i$, sedangkan $\Omega(f_k)$ adalah istilah regularisasi yang menghukum kompleksitas pohon $f_k$. Regularisasi ini didefinisikan sebagai:
+
+\begin{myequation}{Regularisasi Pohon}
+    \label{eq:xgboost_reg}
+    \Omega(f) = \gamma T + \frac{1}{2} \lambda \|w\|^2
+\end{myequation}
+
+Dimana $T$ adalah jumlah daun pada pohon dan $w$ adalah bobot pada daun. Mekanisme ini menjadikan XGBoost sangat \textit{robust} terhadap \textit{noise} dan efektif untuk klasifikasi data trafik jaringan yang kompleks \citep{friedman2001greedy, shao2024comparison}.
+
+\subsection{Ensemble Soft Voting}
+Untuk lebih meningkatkan generalisasi dan akurasi, teknik \textit{Soft Voting} sering digunakan untuk menggabungkan prediksi probabilitas dari beberapa model ensemble yang berbeda (misalnya XGBoost, Random Forest, dan LightGBM).
+
+Berbeda dengan \textit{hard voting} yang hanya menghitung label kelas akhir, \textit{soft voting} mempertimbangkan tingkat keyakinan (probabilitas) dari setiap model. Prediksi akhir $\hat{y}$ adalah kelas yang memiliki rata-rata probabilitas tertimbang tertinggi, seperti didefinisikan pada Persamaan \ref{eq:soft_voting}.
+
+\begin{myequation}{Mekanisme Soft Voting}
+    \label{eq:soft_voting}
+    \hat{y} = \arg \max_{c} \sum_{j=1}^{M} w_j P_j(c|\mathbf{x})
+\end{myequation}
+
+Dimana $M$ adalah jumlah model dalam ensemble, $w_j$ adalah bobot kontribusi model ke-$j$, dan $P_j(c|\mathbf{x})$ adalah probabilitas yang diprediksi oleh model ke-$j$ bahwa input $\mathbf{x}$ termasuk dalam kelas $c$. Pendekatan ini memungkinkan model untuk memanfaatkan kekuatan dari algoritma yang berbeda secara komplementer \citep{probst2019tunability}.
+
+%-----------------------------------------------------------------------------%
+\section{Metrik Evaluasi Kinerja (Performance Evaluation Metrics)}
+\label{sec:bab2-metrics}
+%-----------------------------------------------------------------------------%
+
+Untuk mengukur efektivitas model klasifikasi dalam mengidentifikasi pola lalu lintas jaringan, diperlukan metrik evaluasi yang objektif. Evaluasi ini didasarkan pada elemen-elemen dalam \textit{Confusion Matrix}, yaitu: \textit{True Positive} (TP), \textit{True Negative} (TN), \textit{False Positive} (FP), dan \textit{False Negative} (FN).
+
+\subsection{Akurasi (Accuracy)}
+Akurasi adalah rasio jumlah prediksi yang benar (positif dan negatif) terhadap total seluruh sampel data. Metrik ini memberikan gambaran umum tentang kinerja model.
+
+\begin{myequation}{Akurasi}
+    \label{eq:accuracy}
+    \text{Accuracy} = \frac{TP + TN}{TP + TN + FP + FN}
+\end{myequation}
+
+Meskipun intuitif, akurasi dapat menjadi bias jika digunakan pada dataset yang tidak seimbang (\textit{imbalanced dataset}), di mana kelas mayoritas mendominasi hasil prediksi.
+
+\subsection{Presisi (Precision)}
+Presisi mengukur seberapa akurat model saat memprediksi kelas positif. Metrik ini menjawab pertanyaan: "Dari semua aliran yang diprediksi sebagai aplikasi X, berapa banyak yang benar-benar aplikasi X?". Presisi yang tinggi menunjukkan tingkat positif palsu (FP) yang rendah.
+
+\begin{myequation}{Presisi}
+    \label{eq:precision}
+    \text{Precision} = \frac{TP}{TP + FP}
+\end{myequation}
+
+\subsection{Recall (Sensitivitas)}
+Recall, atau sering disebut sensitivitas, mengukur kemampuan model untuk menemukan semua kejadian positif yang sebenarnya. Metrik ini menjawab pertanyaan: "Dari semua aliran aplikasi X yang ada di jaringan, berapa banyak yang berhasil dideteksi?".
+
+\begin{myequation}{Recall}
+    \label{eq:recall}
+    \text{Recall} = \frac{TP}{TP + FN}
+\end{myequation}
+
+\subsection{F1-Score}
+Mengingat adanya ketidakseimbangan kelas yang signifikan pada dataset ISCX 2016, di mana aplikasi seperti Skype mendominasi dibandingkan aplikasi lain, penggunaan F1-Score menjadi sangat penting.
+
+F1-Score adalah rata-rata harmonik antara Presisi dan Recall. Metrik ini memberikan penilaian yang lebih seimbang dibandingkan akurasi ketika distribusi kelas tidak merata, karena memperhitungkan kesalahan positif palsu maupun negatif palsu.
+
+\begin{myequation}{F1-Score}
+    \label{eq:f1_score}
+    \text{F1-Score} = 2 \cdot \left( \frac{\text{Precision} \cdot \text{Recall}}{\text{Precision} + \text{Recall}} \right)
+\end{myequation}
+
+Dalam konteks klasifikasi multi-kelas (misalnya klasifikasi 6 Kategori atau 16 Aplikasi), F1-Score sering dihitung menggunakan metode \textit{Weighted Average} untuk memberikan bobot proporsional terhadap jumlah sampel di setiap kelas.
